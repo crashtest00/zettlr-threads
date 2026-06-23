@@ -553,7 +553,7 @@ function dragOver (event: DragEvent): void {
 
 function drop (event: DragEvent): void {
   const lis = document.querySelectorAll<HTMLLIElement>('ul#workspaces-drag-list li')
-  const targetLi = lis.entries().map(([ idx, li ]) => li).find(li => li.classList.contains('drag-over'))
+  const targetLi = Array.from(lis).find(li => li.classList.contains('drag-over'))
   lis.forEach(li => li.classList.remove('drag-over'))
 
   if (

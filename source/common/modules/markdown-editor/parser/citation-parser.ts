@@ -80,12 +80,12 @@ for (const key in locatorLabels) {
 
   sanitizedLocatorLabels[key as CSL_LOCATOR_TERM] = setLabels
   // Flatten all labels for quick validation
-  allValidLocatorLabels = allValidLocatorLabels.union(setLabels)
+  allValidLocatorLabels = new Set([ ...allValidLocatorLabels, ...setLabels ])
 }
 
 // Determine the longest locator length (so that we know below how many
 // characters we must extract from the inline context).
-const maxLocatorLabelLength = Math.max(...allValidLocatorLabels.values().map(x => x.length))
+const maxLocatorLabelLength = Math.max(...Array.from(allValidLocatorLabels, x => x.length))
 
 /**
  * I strongly believe that Marijn's approach of using character codepoints

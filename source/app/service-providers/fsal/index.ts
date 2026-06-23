@@ -234,7 +234,8 @@ export default class FSAL extends ProviderContract {
 
     if (workingOpenFiles.length < openFiles.length) {
       const deadCount = openFiles.length - workingOpenFiles.length
-      const deadFiles = [...(new Set(openFiles)).difference(new Set(workingOpenFiles))]
+      const workingOpenFileSet = new Set(workingOpenFiles)
+      const deadFiles = openFiles.filter(file => !workingOpenFileSet.has(file))
       this._logger.warning(`[FSAL] Discovered ${deadCount} dead standalone files while synchronizing root paths: ${deadFiles.join(', ')}`)
       this._config.set('app.openFiles', workingOpenFiles)
       openFiles = workingOpenFiles
