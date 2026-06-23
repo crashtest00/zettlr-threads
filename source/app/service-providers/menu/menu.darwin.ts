@@ -23,6 +23,7 @@ import { zoomIn, zoomOut } from './font-zoom'
 import type ConfigProvider from '@providers/config'
 import type DocumentManager from '@providers/documents'
 import { DocumentType } from '@dts/common/documents'
+import { openClaudeCoworkSetup } from './open-claude-cowork-setup'
 
 export default function getMenu (
   logger: LogProvider,
@@ -677,6 +678,15 @@ export default function getMenu (
             const target = 'https://docs.zettlr.com/'
             shell.openExternal(target).catch(e => {
               logger.error(`[Menu Provider] Cannot open target: ${target}`, e.message)
+            })
+          }
+        },
+        {
+          id: 'menu.setup_claude_cowork',
+          label: trans('Setup Claude Cowork'),
+          click: function (_menuitem, _focusedWindow) {
+            openClaudeCoworkSetup(logger).catch(e => {
+              logger.error(String(e.message), e)
             })
           }
         },

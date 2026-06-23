@@ -2,10 +2,10 @@
 # packages for our officially supported distributions.
 #
 # Formerly the "build" key in the package.json.
-appId: com.zettlr.app
-productName: Zettlr
+appId: com.crashtest00.zettlrthreads
+productName: Zettlr Threads
 npmRebuild: false
-copyright: Zettlr is licensed under GNU GPL v3.
+copyright: Zettlr Threads is an unofficial Zettlr fork licensed under GNU GPL v3.
 fileAssociations:
 - ext: md
   name: Markdown
@@ -34,7 +34,7 @@ mac:
   category: "public.app-category.productivity"
   target:
   - dmg
-  artifactName: "Zettlr-${version}-${arch}.${ext}"
+  artifactName: "Zettlr-Threads-${version}-${arch}.${ext}"
   icon: "./resources/icons/icon.icns"
   darkModeSupport: true
   hardenedRuntime: true
@@ -47,28 +47,23 @@ mac:
 win:
   target:
   - nsis
-  artifactName: "Zettlr-${version}-${arch}.${ext}"
+  artifactName: "Zettlr-Threads-${version}-${arch}.${ext}"
   icon: "./resources/icons/icon.ico"
-  # New signing options for use with Azure Trusted Signing
-  azureSignOptions:
-    publisherName: "Hendrik Erz"
-    endpoint: "https://neu.codesigning.azure.net/"
-    certificateProfileName: "zettlr-code-sign-cert"
-    codeSigningAccountName: "zettlr"
+  # Upstream signing options intentionally omitted for the fork.
 #
 # Generic Linux options
 #
 linux:
   target:
   - AppImage
-  artifactName: "Zettlr-${version}-${arch}.${ext}"
-  executableName: Zettlr
+  artifactName: "Zettlr-Threads-${version}-${arch}.${ext}"
+  executableName: zettlr-threads
   synopsis: Markdown editor
   category: Office
   icon: "./resources/icons/png"
   desktop:
     entry:
-      StartupWMClass: zettlr
+      StartupWMClass: zettlr-threads
 #
 # Configuration for DMG builds
 #

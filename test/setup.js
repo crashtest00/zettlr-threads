@@ -46,7 +46,7 @@ function mockBrowser () {
   }
 
   // Mock the navigator.clipboard readText() and writeText()
-  navigator.clipboard = {
+  window.navigator.clipboard = {
     _data: '',
     readText() { return this._data },
     writeText(text) { this._data = text }

@@ -51,6 +51,7 @@ import type { DocumentManagerIPCAPI, DocumentsUpdateContext } from 'source/app/s
 import type { CiteprocProviderIPCAPI } from 'source/app/service-providers/citeproc'
 import type { ProjectInfo } from 'source/common/modules/markdown-editor/plugins/project-info-field'
 import type { FileContentSearchResult } from 'source/app/service-providers/search'
+import type { CommentThread } from 'source/common/modules/markdown-editor/comments/types'
 
 const ipcRenderer = window.ipc
 
@@ -185,6 +186,8 @@ onBeforeUnmount(() => {
     props.persistentStateMap.set(props.file.path, currentEditor.persistentState)
     // Clear out the table of contents before unmounting the component.
     windowStateStore.tableOfContents = undefined
+    windowStateStore.commentThreads = []
+    windowStateStore.selectedCommentThread = undefined
     currentEditor.unmount()
   }
 })
@@ -387,6 +390,76 @@ watch(toRef(props.editorCommands, 'executeCommand'), () => {
   currentEditor.focus()
 })
 
+watch(toRef(props.editorCommands, 'appendCommentReply'), () => {
+  if (props.activeFile?.path !== props.file.path || currentEditor === null) {
+    return
+  }
+
+  if (documentTreeStore.lastLeafId !== props.leafId) {
+    return
+  }
+
+  const selectedThread = windowStateStore.selectedCommentThread
+  const body: string = props.editorCommands.data
+  if (selectedThread !== undefined && typeof body === 'string') {
+    currentEditor.appendCommentReply(selectedThread, body)
+    currentEditor.focus()
+  }
+})
+
+watch(toRef(props.editorCommands, 'editCommentMessage'), () => {
+  if (props.activeFile?.path !== props.file.path || currentEditor === null) {
+    return
+  }
+
+  if (documentTreeStore.lastLeafId !== props.leafId) {
+    return
+  }
+
+  const selectedThread = windowStateStore.selectedCommentThread
+  const payload: { index?: number, body?: string } = props.editorCommands.data
+  if (
+    selectedThread !== undefined &&
+    typeof payload.index === 'number' &&
+    typeof payload.body === 'string'
+  ) {
+    currentEditor.editCommentMessage(selectedThread, payload.index, payload.body)
+    currentEditor.focus()
+  }
+})
+
+watch(toRef(props.editorCommands, 'resolveCommentThread'), () => {
+  if (props.activeFile?.path !== props.file.path || currentEditor === null) {
+    return
+  }
+
+  if (documentTreeStore.lastLeafId !== props.leafId) {
+    return
+  }
+
+  const selectedThread = windowStateStore.selectedCommentThread
+  if (selectedThread !== undefined) {
+    currentEditor.resolveCommentThread(selectedThread)
+    currentEditor.focus()
+  }
+})
+
+watch(toRef(props.editorCommands, 'deleteCommentThread'), () => {
+  if (props.activeFile?.path !== props.file.path || currentEditor === null) {
+    return
+  }
+
+  if (documentTreeStore.lastLeafId !== props.leafId) {
+    return
+  }
+
+  const selectedThread = windowStateStore.selectedCommentThread
+  if (selectedThread !== undefined) {
+    currentEditor.deleteCommentThread(selectedThread)
+    currentEditor.focus()
+  }
+})
+
 watch(toRef(props.editorCommands, 'replaceSelection'), () => {
   if (props.activeFile?.path !== props.file.path) {
     return
@@ -463,12 +536,29 @@ async function getEditorFor (doc: string): Promise<MarkdownEditor> {
     if (currentEditor === editor) {
       windowStateStore.activeDocumentInfo = currentEditor.documentInfo
       windowStateStore.tableOfContents = currentEditor.tableOfContents
+      syncCommentThreads(currentEditor.commentThreads)
     }
   })
 
   editor.on('change', () => {
     if (currentEditor === editor) {
       windowStateStore.tableOfContents = currentEditor.tableOfContents
+      syncCommentThreads(currentEditor.commentThreads)
+    }
+  })
+
+  editor.on('comment-threads-changed', (threads: CommentThread[]) => {
+    if (currentEditor === editor) {
+      syncCommentThreads(threads)
+    }
+  })
+
+  editor.on('comment-thread-selected', (thread: CommentThread) => {
+    if (currentEditor === editor) {
+      windowStateStore.commentThreads = currentEditor.commentThreads
+      windowStateStore.selectedCommentThread = thread
+      configStore.setConfigValue('window.sidebarVisible', true)
+      configStore.setConfigValue('window.currentSidebarTab', 'comments')
     }
   })
 
@@ -562,6 +652,24 @@ async function loadDocument (): Promise<void> {
 
 function jtl (lineNumber: number): void {
   currentEditor?.jtl(lineNumber)
+}
+
+function syncCommentThreads (threads: CommentThread[]): void {
+  windowStateStore.commentThreads = threads
+
+  const selected = windowStateStore.selectedCommentThread
+  if (selected === undefined) {
+    return
+  }
+
+  const exact = threads.find(thread => thread.from === selected.from && thread.to === selected.to)
+  if (exact !== undefined) {
+    windowStateStore.selectedCommentThread = exact
+    return
+  }
+
+  const matchingIds = threads.filter(thread => thread.id === selected.id)
+  windowStateStore.selectedCommentThread = matchingIds.length === 1 ? matchingIds[0] : undefined
 }
 
 async function updateCitationKeys (library: string): Promise<void> {

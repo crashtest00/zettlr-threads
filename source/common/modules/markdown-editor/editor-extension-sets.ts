@@ -58,6 +58,7 @@ import { statusbar } from './statusbar'
 import { renderers } from './renderers'
 import { mdPasteDropHandlers } from './plugins/md-paste-drop-handlers'
 import { footnoteGutter } from './plugins/footnote-gutter'
+import { commentGutter } from './plugins/comment-gutter'
 import { yamlFrontmatterLint } from './linters/yaml-frontmatter-lint'
 import {
   mainThemes, darkMode,
@@ -331,6 +332,7 @@ export function getMarkdownExtensions (options: CoreExtensionOptions): Extension
     formattingToolbar,
     footnoteHover,
     footnoteGutter, // Should be after markdownFolding
+    commentGutter,
     urlHover,
     filePreview,
     citationTooltips,

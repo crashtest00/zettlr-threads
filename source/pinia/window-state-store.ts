@@ -21,6 +21,7 @@ import { computed, ref, type Ref } from 'vue'
 import { type WritingTarget } from '@providers/targets'
 import type { AssetsProviderIPCAPI } from 'source/app/service-providers/assets'
 import type { SearchResultWrapper } from 'source/win-main/GlobalSearch.vue'
+import type { CommentThread } from 'source/common/modules/markdown-editor/comments/types'
 
 const ipcRenderer = window.ipc
 
@@ -51,6 +52,8 @@ export const useWindowStateStore = defineStore('window-state', () => {
   const distractionFreeMode = ref<undefined|string>(undefined)
   const activeDocumentInfo = ref<undefined|DocumentInfo>(undefined)
   const tableOfContents = ref<ToCEntry[]|undefined>(undefined)
+  const commentThreads = ref<CommentThread[]>([])
+  const selectedCommentThread = ref<CommentThread|undefined>(undefined)
   const snippets = ref<Array<{ name: string, content: string }>>([])
   const writingTargets = ref<WritingTarget[]>([])
 
@@ -101,6 +104,8 @@ export const useWindowStateStore = defineStore('window-state', () => {
     distractionFreeMode,
     activeDocumentInfo,
     tableOfContents,
+    commentThreads,
+    selectedCommentThread,
     searchResults,
     addSearchResult,
     maxSearchResultWeight,
