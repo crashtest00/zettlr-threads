@@ -103,17 +103,21 @@ module.exports = {
       // build was based off on.
       process.env.GIT_COMMIT_HASH = await getGitHash()
 
-      // Second, we need to make sure we can bundle Pandoc.
-      if (process.env.BUNDLE_PANDOC === '0') {
-        console.warn('Detected environment variable BUNDLE_PANDOC -- this build will not be bundled with Pandoc!')
-        return
-      }
-
       const isMacOS = targetPlatform === 'darwin'
       const isLinux = targetPlatform === 'linux'
       const isWin32 = targetPlatform === 'win32'
       const isArm64 = targetArch === 'arm64'
       const is64Bit = targetArch === 'x64'
+
+      if (isLinux) {
+        forgeConfig.packagerConfig.executableName = 'zettlr-threads'
+      }
+
+      // Second, we need to make sure we can bundle Pandoc.
+      if (process.env.BUNDLE_PANDOC === '0') {
+        console.warn('Detected environment variable BUNDLE_PANDOC -- this build will not be bundled with Pandoc!')
+        return
+      }
 
       // macOS has Rosetta 2 built-in, so we can bundle Pandoc 64bit
       const supportsPandoc = is64Bit || (isMacOS && isArm64) || (isLinux && isArm64)
@@ -210,15 +214,10 @@ module.exports = {
       unpack: '*.{node,dll}'
     },
     darwinDarkModeSupport: 'true',
-    // Electron-forge automatically adds the file extension based on OS
+    // Electron-forge automatically adds the file extension based on OS.
+    // Linux overrides executableName in the generateAssets hook so deb/rpm
+    // makers can use the lowercase zettlr-threads command name.
     icon: './resources/icons/icon',
-    // The binary name should always be Zettlr Threads. As we cannot specify
-    // this on a per-maker basis, we need to output everything this way. With
-    // this property, macOS builds are named Zettlr Threads.app, Windows builds
-    // Zettlr Threads.exe and the linux binaries are called Zettlr Threads (albeit on Linux,
-    // lowercase is preferred). Due to the last issue (Linux binaries being
-    // title-cased) we have to explicitly set executableName on the Linux
-    // target.
     name: 'Zettlr Threads',
     osxSign: false,
     osxNotarize: false,
