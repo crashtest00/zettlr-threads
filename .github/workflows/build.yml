@@ -116,7 +116,9 @@ jobs:
         run: yarn install --immutable
       - name: Retrieve tag version
         id: ref
-        run: echo "version=$(node -p 'require(process.cwd() + "/package.json").version')" >> "$GITHUB_ENV"
+        run: |
+          echo "version=$(node -p 'require(process.cwd() + "/package.json").version')" >> "$GITHUB_ENV"
+          echo "artifactProductName=$(node -p 'require(process.cwd() + "/package.json").productName.replace(/\s+/g, "-")')" >> "$GITHUB_ENV"
       - name: Package & Release
         run: yarn package:win-x64 && yarn release:win-x64
       - name: Cache installer
@@ -124,7 +126,7 @@ jobs:
         with:
           name: win32_x64
           path: |
-            ./release/Zettlr-Threads-${{ env.version }}-x64.exe
+            ./release/${{ env.artifactProductName }}-${{ env.version }}-x64.exe
 
   # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
   #                                                                           #
@@ -153,7 +155,9 @@ jobs:
         run: yarn install --immutable
       - name: Retrieve tag version
         id: ref
-        run: echo "version=$(node -p 'require(process.cwd() + "/package.json").version')" >> "$GITHUB_ENV"
+        run: |
+          echo "version=$(node -p 'require(process.cwd() + "/package.json").version')" >> "$GITHUB_ENV"
+          echo "artifactProductName=$(node -p 'require(process.cwd() + "/package.json").productName.replace(/\s+/g, "-")')" >> "$GITHUB_ENV"
       - name: Package
         run: yarn package:mac-x64
       - name: Release
@@ -163,7 +167,7 @@ jobs:
         with:
           name: darwin_x64
           path: |
-            ./release/Zettlr-Threads-${{ env.version }}-x64.dmg
+            ./release/${{ env.artifactProductName }}-${{ env.version }}-x64.dmg
 
   build_macos_arm64:
     name: macOS (arm64)
@@ -187,7 +191,9 @@ jobs:
         run: yarn install --immutable
       - name: Retrieve tag version
         id: ref
-        run: echo "version=$(node -p 'require(process.cwd() + "/package.json").version')" >> "$GITHUB_ENV"
+        run: |
+          echo "version=$(node -p 'require(process.cwd() + "/package.json").version')" >> "$GITHUB_ENV"
+          echo "artifactProductName=$(node -p 'require(process.cwd() + "/package.json").productName.replace(/\s+/g, "-")')" >> "$GITHUB_ENV"
       - name: Package
         run: yarn package:mac-arm
       - name: Release
@@ -197,7 +203,7 @@ jobs:
         with:
           name: darwin_arm64
           path: |
-            ./release/Zettlr-Threads-${{ env.version }}-arm64.dmg
+            ./release/${{ env.artifactProductName }}-${{ env.version }}-arm64.dmg
 
   # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
   #                                                                           #
@@ -234,7 +240,9 @@ jobs:
         run: yarn install --immutable
       - name: Retrieve tag version
         id: ref
-        run: echo "version=$(node -p 'require(process.cwd() + "/package.json").version')" >> "$GITHUB_ENV"
+        run: |
+          echo "version=$(node -p 'require(process.cwd() + "/package.json").version')" >> "$GITHUB_ENV"
+          echo "artifactProductName=$(node -p 'require(process.cwd() + "/package.json").productName.replace(/\s+/g, "-")')" >> "$GITHUB_ENV"
       - name: Package & Release
         run: |
           yarn package:linux-x64
@@ -244,9 +252,9 @@ jobs:
         with:
           name: linux_x64
           path: |
-            ./release/Zettlr-Threads-${{ env.version }}-amd64.deb
-            ./release/Zettlr-Threads-${{ env.version }}-x86_64.rpm
-            ./release/Zettlr-Threads-${{ env.version }}-x86_64.AppImage
+            ./release/${{ env.artifactProductName }}-${{ env.version }}-amd64.deb
+            ./release/${{ env.artifactProductName }}-${{ env.version }}-x86_64.rpm
+            ./release/${{ env.artifactProductName }}-${{ env.version }}-x86_64.AppImage
 
   build_linux_arm64:
     name: Linux (arm64)
@@ -274,7 +282,9 @@ jobs:
         run: yarn install --immutable
       - name: Retrieve tag version
         id: ref
-        run: echo "version=$(node -p 'require(process.cwd() + "/package.json").version')" >> "$GITHUB_ENV"
+        run: |
+          echo "version=$(node -p 'require(process.cwd() + "/package.json").version')" >> "$GITHUB_ENV"
+          echo "artifactProductName=$(node -p 'require(process.cwd() + "/package.json").productName.replace(/\s+/g, "-")')" >> "$GITHUB_ENV"
       - name: Package & Release
         run: |
           yarn package:linux-arm
@@ -284,9 +294,9 @@ jobs:
         with:
           name: linux_arm64
           path: |
-            ./release/Zettlr-Threads-${{ env.version }}-arm64.deb
-            ./release/Zettlr-Threads-${{ env.version }}-aarch64.rpm
-            ./release/Zettlr-Threads-${{ env.version }}-arm64.AppImage
+            ./release/${{ env.artifactProductName }}-${{ env.version }}-arm64.deb
+            ./release/${{ env.artifactProductName }}-${{ env.version }}-aarch64.rpm
+            ./release/${{ env.artifactProductName }}-${{ env.version }}-arm64.AppImage
 
   # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
   #                                                                           #
@@ -315,7 +325,9 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
       - name: Retrieve tag version
         id: ref
-        run: echo "version=$(node -p 'require(process.cwd() + "/package.json").version')" >> "$GITHUB_ENV"
+        run: |
+          echo "version=$(node -p 'require(process.cwd() + "/package.json").version')" >> "$GITHUB_ENV"
+          echo "artifactProductName=$(node -p 'require(process.cwd() + "/package.json").productName.replace(/\s+/g, "-")')" >> "$GITHUB_ENV"
       - name: Make release directory
         run: mkdir ./release
       # Download all resulting assets from the previous steps.
@@ -348,15 +360,15 @@ jobs:
         run: |
           cd ./release
           expected_files=(
-            "Zettlr-Threads-${{ env.version }}-x64.exe"
-            "Zettlr-Threads-${{ env.version }}-x64.dmg"
-            "Zettlr-Threads-${{ env.version }}-arm64.dmg"
-            "Zettlr-Threads-${{ env.version }}-amd64.deb"
-            "Zettlr-Threads-${{ env.version }}-arm64.deb"
-            "Zettlr-Threads-${{ env.version }}-x86_64.rpm"
-            "Zettlr-Threads-${{ env.version }}-aarch64.rpm"
-            "Zettlr-Threads-${{ env.version }}-x86_64.AppImage"
-            "Zettlr-Threads-${{ env.version }}-arm64.AppImage"
+            "${artifactProductName}-${version}-x64.exe"
+            "${artifactProductName}-${version}-x64.dmg"
+            "${artifactProductName}-${version}-arm64.dmg"
+            "${artifactProductName}-${version}-amd64.deb"
+            "${artifactProductName}-${version}-arm64.deb"
+            "${artifactProductName}-${version}-x86_64.rpm"
+            "${artifactProductName}-${version}-aarch64.rpm"
+            "${artifactProductName}-${version}-x86_64.AppImage"
+            "${artifactProductName}-${version}-arm64.AppImage"
           )
 
           for file in "${expected_files[@]}"; do
@@ -366,15 +378,15 @@ jobs:
       - name: Generate SHA256 checksums
         run: |
           cd ./release
-          sha256sum "Zettlr-Threads-${{ env.version }}-x64.exe" > "SHA256SUMS.txt"
-          sha256sum "Zettlr-Threads-${{ env.version }}-x64.dmg" >> "SHA256SUMS.txt"
-          sha256sum "Zettlr-Threads-${{ env.version }}-arm64.dmg" >> "SHA256SUMS.txt"
-          sha256sum "Zettlr-Threads-${{ env.version }}-x86_64.AppImage" >> "SHA256SUMS.txt"
-          sha256sum "Zettlr-Threads-${{ env.version }}-arm64.AppImage" >> "SHA256SUMS.txt"
-          sha256sum "Zettlr-Threads-${{ env.version }}-amd64.deb" >> "SHA256SUMS.txt"
-          sha256sum "Zettlr-Threads-${{ env.version }}-arm64.deb" >> "SHA256SUMS.txt"
-          sha256sum "Zettlr-Threads-${{ env.version }}-x86_64.rpm" >> "SHA256SUMS.txt"
-          sha256sum "Zettlr-Threads-${{ env.version }}-aarch64.rpm" >> "SHA256SUMS.txt"
+          sha256sum "${artifactProductName}-${version}-x64.exe" > "SHA256SUMS.txt"
+          sha256sum "${artifactProductName}-${version}-x64.dmg" >> "SHA256SUMS.txt"
+          sha256sum "${artifactProductName}-${version}-arm64.dmg" >> "SHA256SUMS.txt"
+          sha256sum "${artifactProductName}-${version}-x86_64.AppImage" >> "SHA256SUMS.txt"
+          sha256sum "${artifactProductName}-${version}-arm64.AppImage" >> "SHA256SUMS.txt"
+          sha256sum "${artifactProductName}-${version}-amd64.deb" >> "SHA256SUMS.txt"
+          sha256sum "${artifactProductName}-${version}-arm64.deb" >> "SHA256SUMS.txt"
+          sha256sum "${artifactProductName}-${version}-x86_64.rpm" >> "SHA256SUMS.txt"
+          sha256sum "${artifactProductName}-${version}-aarch64.rpm" >> "SHA256SUMS.txt"
           cd ..
       - name: Verify checksums
         run: |
@@ -394,13 +406,13 @@ jobs:
           draft: true # Always create as draft, so that we can populate the remaining values easily
           # Gosh, is that convenient as opposed to earlier!
           files: |
-            ./release/Zettlr-Threads-${{ env.version }}-x64.exe
-            ./release/Zettlr-Threads-${{ env.version }}-x64.dmg
-            ./release/Zettlr-Threads-${{ env.version }}-arm64.dmg
-            ./release/Zettlr-Threads-${{ env.version }}-amd64.deb
-            ./release/Zettlr-Threads-${{ env.version }}-arm64.deb
-            ./release/Zettlr-Threads-${{ env.version }}-x86_64.rpm
-            ./release/Zettlr-Threads-${{ env.version }}-aarch64.rpm
-            ./release/Zettlr-Threads-${{ env.version }}-x86_64.AppImage
-            ./release/Zettlr-Threads-${{ env.version }}-arm64.AppImage
+            ./release/${{ env.artifactProductName }}-${{ env.version }}-x64.exe
+            ./release/${{ env.artifactProductName }}-${{ env.version }}-x64.dmg
+            ./release/${{ env.artifactProductName }}-${{ env.version }}-arm64.dmg
+            ./release/${{ env.artifactProductName }}-${{ env.version }}-amd64.deb
+            ./release/${{ env.artifactProductName }}-${{ env.version }}-arm64.deb
+            ./release/${{ env.artifactProductName }}-${{ env.version }}-x86_64.rpm
+            ./release/${{ env.artifactProductName }}-${{ env.version }}-aarch64.rpm
+            ./release/${{ env.artifactProductName }}-${{ env.version }}-x86_64.AppImage
+            ./release/${{ env.artifactProductName }}-${{ env.version }}-arm64.AppImage
             ./release/SHA256SUMS.txt
