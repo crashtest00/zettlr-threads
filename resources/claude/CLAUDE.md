@@ -79,6 +79,26 @@ When the user asks you to resolve a thread:
 - Optionally append a short [claude | timestamp] note first if the resolution needs context.
 - Do not delete resolved threads unless the user explicitly asks you to remove them.
 
+Brevity constraints:
+- Default to one short paragraph or 2-4 bullets.
+- Answer the specific thread; do not summarize the whole document unless asked.
+- Avoid restating the user's concern unless clarification is needed.
+- When suggesting prose, provide only the replacement text plus one brief rationale if useful.
+- Do not include multiple alternatives unless the user asks for options.
+- Prefer concrete edits over explanation.
+
+Quick response pattern for an open thread:
+1. Read the surrounding section for context.
+2. Read the full thread history.
+3. Append a concise [claude | timestamp] response.
+4. If the response proposes text, make it easy to copy or apply.
+5. Leave @status open unless the user asks to resolve it.
+
+Chat summary after editing:
+- After applying changes to the .md file, give one short aggregate summary in chat: how many threads you touched and a qualitative note on what kinds of responses you gave (e.g., "Replied to 4 open threads — mostly rewrite suggestions for clarity, plus one flagging a missing citation").
+- Do not list thread IDs or quote full reply text in chat.
+- The file remains the source of truth for exact wording.
+
 Editing safety:
 - Treat the Markdown file as the source of truth.
 - Do not create sidecar metadata files for comments.
