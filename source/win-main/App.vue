@@ -189,6 +189,7 @@ import { type AnyDescriptor } from 'source/types/common/fsal'
 import type { DocumentManagerIPCAPI } from 'source/app/service-providers/documents'
 import { TaskStatus } from 'source/pinia/lrt-store'
 import PopoverLRT from './PopoverLRT.vue'
+import PACKAGE_JSON from '../../package.json'
 
 const ipcRenderer = window.ipc
 
@@ -350,12 +351,13 @@ const sidebarsBeforeDistractionfree = ref<{ fileManager: boolean, sidebar: boole
 const sidebarVisible = computed<boolean>(() => configStore.config.window.sidebarVisible)
 const activeFile = computed(() => documentTreeStore.lastLeafActiveFile)
 const shouldCountChars = computed<boolean>(() => configStore.config.editor.countChars)
+const productName = PACKAGE_JSON.productName
 const windowTitle = computed<string>(() => {
   if (activeFile.value === undefined) {
-    return 'Zettlr Threads Dev Ready'
+    return productName
   }
 
-  return `Zettlr Threads Dev Ready - ${getDocumentTitle(activeFile.value)}`
+  return `${productName} - ${getDocumentTitle(activeFile.value)}`
 })
 
 // Simple state machine to trigger which of the three shows up when. Below's the
