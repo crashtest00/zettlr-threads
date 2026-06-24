@@ -10,25 +10,14 @@ name: Build
 #                                                                             #
 # WHEN IT RUNS:                                                               #
 #                                                                             #
-# * Whenever someone successfully pushes develop --> master.                  #
-# * Every Monday at noon (UTC)                                                #
 # * Manually                                                                  #
-#                                                                             #
-# The last two events are being used to create nightly releases. The first    #
-# event type indicates that the pipeline should build a regular release.      #
 #                                                                             #
 # HOW IT RUNS:                                                                #
 #                                                                             #
-# 1. Three virtual machines are spun up in parallel: A Windows VM, a Ubuntu   #
-#    VM, and a macOS VM. All three are tasked with building all releases that #
-#    we offer for the given platform. The Ubuntu VM builds the most since we  #
-#    have many more Linux releases. Windows and macOS only build one x64 and  #
-#    one ARM release. However, they also perform code signing (and            #
-#    notarization in case of the macOS VM), which the Ubuntu VM doesn't do.   #
-# 2. Each VM uploads all resulting artifacts into their respective artifact   #
-#    space, named "linux", "darwin", and "win32" respectively (analogous to   #
-#    node.js's process.platform-variable).                                    #
-# 3. Iff (if and only if) all three runners have shut down successfully,      #
+# 1. Native Windows, macOS, and Ubuntu runners build release artifacts for    #
+#    their supported OS/architecture pairs.                                   #
+# 2. Each build job uploads only its final release artifacts.                 #
+# 3. Iff (if and only if) all build runners have shut down successfully,      #
 #    indicating successful builds, another Ubuntu VM will be started. That    #
 #    one is tasked with downloading all releases from the three artifact      #
 #    spaces, calculate the SHA-256 checksums for every file and afterwards    #
@@ -52,6 +41,9 @@ on:
   # Releases must be manually started.
   workflow_dispatch: {}
 
+permissions:
+  contents: write
+
 # Defaults for every job and step in this workflow
 defaults:
   run:
@@ -60,12 +52,6 @@ defaults:
 # Global environment variables
 env:
   NODE_VERSION: '22'
-  # Nightly builds are disabled for this fork.
-  NIGHTLY_BRANCH: ''
-  # Specify the branch name which will cause beta releases to be published
-  RC_BRANCH: 'release-candidate'
-  # Specify the branch name which will cause release drafts to be published
-  RELEASE_BRANCH: 'master'
   # DEBUG: '*' # Uncomment to debug Electron building packages
 
 # Ensure only a single build workflow runs at any one time
@@ -73,21 +59,17 @@ concurrency:
   group: ${{ github.workflow }}
   cancel-in-progress: true
 
-# This workflow file contains four jobs, three to build the corresponding
-# releases on all three supported platforms, and a last one, which will
-# create the release draft.
+# This workflow file runs preflight checks, builds the corresponding releases
+# on all supported platforms, and creates the release draft.
 jobs:
   # First, ensure that nothing breaks before attempting to build
   preflight:
     name: 'Preflight'
     uses: ./.github/workflows/check.yml
-  # If we're building a full release, we have to make sure that nobody (that is:
-  # Hendrik) forgot to increment the tag version. If we already have a tag with
-  # this version, we should not proceed, because that will then lead to an
-  # overwriting of the files in the previous release. That doesn't wreak any
-  # havoc because we don't push unstable code to master, BUT it looks bad.
+  # Verify that package.json has been bumped before attempting release builds.
   verify_version:
     name: 'Preflight: Verify version tag'
+    needs: [preflight]
     runs-on: ubuntu-22.04
     steps:
       - name: Clone repository (${{ github.ref_name }} branch)
@@ -95,20 +77,12 @@ jobs:
         with:
           ref: ${{ github.ref_name }}
           fetch-depth: 0 # Required for the tag verification step.
-      - name: Enable Yarn 4.x
-        run: corepack enable
-      - name: Setup NodeJS ${{ env.NODE_VERSION }}
-        uses: actions/setup-node@v6
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'yarn'
       - name: Retrieve tag version
         id: ref
-        run: echo "version=$(cat package.json | jq -r '.version')" >> $GITHUB_ENV
+        run: echo "version=$(node -p 'require(process.cwd() + "/package.json").version')" >> "$GITHUB_ENV"
       - name: Verify the corresponding tag does not yet exist
-        if: ${{ github.ref_name == env.RELEASE_BRANCH || github.ref_name == env.RC_BRANCH }}
         # NOTE: the ! will return 0 if the command fails, and 1 otherwise
-        run: '! git rev-parse "v${{env.version}}"'
+        run: '! git rev-parse "v${{ env.version }}"'
 
 
 
@@ -137,33 +111,14 @@ jobs:
       - name: Enable Yarn 4.x
         run: corepack enable
       - name: Activate Yarn from package.json (Windows)
-        run: corepack prepare "$(jq -r '.packageManager' package.json)" --activate
+        run: corepack prepare "$(node -p 'require(process.cwd() + "/package.json").packageManager')" --activate
       - name: Set up build environment
         run: yarn install --immutable
-      - name: Set tag version to nightly
-        if: ${{ github.ref_name == env.NIGHTLY_BRANCH }}
-        run: |
-          echo "old_version=$(cat package.json | jq -r '.version')" >> $GITHUB_ENV
-          echo "$(cat package.json | jq '.version = .version + "+nightly"')" > package.json
       - name: Retrieve tag version
         id: ref
-        run: echo "version=$(cat package.json | jq -r '.version')" >> $GITHUB_ENV
+        run: echo "version=$(node -p 'require(process.cwd() + "/package.json").version')" >> "$GITHUB_ENV"
       - name: Package & Release
         run: yarn package:win-x64 && yarn release:win-x64
-        shell: pwsh # Run this using Powershell because it requires that for CodeSigning
-        env:
-          # Use OpenID Authentication flow
-          AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
-          AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
-          AZURE_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
-      # Electron builder unfortunately, after all these years, still swallows
-      # build information from the nightlies, and keeps only the non-nightly
-      # version string to name the file. With this small step, we rename the
-      # file so that the rest of the script works again. Implemented also in the
-      # other build steps.
-      - name: Rename installer
-        if: ${{ github.ref_name == env.NIGHTLY_BRANCH }}
-        run: mv ./release/Zettlr-Threads-${{ env.old_version }}-x64.exe ./release/Zettlr-Threads-${{ env.version }}-x64.exe
       - name: Cache installer
         uses: actions/upload-artifact@v6
         with:
@@ -181,9 +136,8 @@ jobs:
     env:
       npm_config_arch: x64
     needs: [preflight, verify_version]
-    runs-on: macos-latest
+    runs-on: macos-15-intel
     steps:
-      # Check out master for a regular release, or develop branch for a nightly
       - name: Checkout branch ${{ github.ref_name }}
         uses: actions/checkout@v6
         with:
@@ -197,21 +151,13 @@ jobs:
           cache: 'yarn'
       - name: Set up build environment
         run: yarn install --immutable
-      - name: Set tag version to nightly
-        if: ${{ github.ref_name == env.NIGHTLY_BRANCH }}
-        run: |
-          echo "old_version=$(cat package.json | jq -r '.version')" >> $GITHUB_ENV
-          echo "$(cat package.json | jq '.version = .version + "+nightly"')" > package.json
       - name: Retrieve tag version
         id: ref
-        run: echo "version=$(cat package.json | jq -r '.version')" >> $GITHUB_ENV
+        run: echo "version=$(node -p 'require(process.cwd() + "/package.json").version')" >> "$GITHUB_ENV"
       - name: Package
         run: yarn package:mac-x64
       - name: Release
         run: yarn release:mac-x64
-      - name: Rename image file
-        if: ${{ github.ref_name == env.NIGHTLY_BRANCH }}
-        run: mv ./release/Zettlr-Threads-${{ env.old_version }}-x64.dmg ./release/Zettlr-Threads-${{ env.version }}-x64.dmg
       - name: Cache image file
         uses: actions/upload-artifact@v6
         with:
@@ -239,21 +185,13 @@ jobs:
           cache: 'yarn'
       - name: Set up build environment
         run: yarn install --immutable
-      - name: Set tag version to nightly
-        if: ${{ github.ref_name == env.NIGHTLY_BRANCH }}
-        run: |
-          echo "old_version=$(cat package.json | jq -r '.version')" >> $GITHUB_ENV
-          echo "$(cat package.json | jq '.version = .version + "+nightly"')" > package.json
       - name: Retrieve tag version
         id: ref
-        run: echo "version=$(cat package.json | jq -r '.version')" >> $GITHUB_ENV
+        run: echo "version=$(node -p 'require(process.cwd() + "/package.json").version')" >> "$GITHUB_ENV"
       - name: Package
         run: yarn package:mac-arm
       - name: Release
         run: yarn release:mac-arm
-      - name: Rename image file
-        if: ${{ github.ref_name == env.NIGHTLY_BRANCH }}
-        run: mv ./release/Zettlr-Threads-${{ env.old_version }}-arm64.dmg ./release/Zettlr-Threads-${{ env.version }}-arm64.dmg
       - name: Cache image file
         uses: actions/upload-artifact@v6
         with:
@@ -275,7 +213,6 @@ jobs:
     needs: [preflight, verify_version]
     runs-on: ubuntu-22.04
     steps:
-      # Check out master for a regular release, or develop branch for a nightly
       - name: Checkout branch ${{ github.ref_name }}
         uses: actions/checkout@v6
         with:
@@ -295,22 +232,13 @@ jobs:
         uses: goto-bus-stop/setup-zig@v2
       - name: Set up build environment
         run: yarn install --immutable
-      - name: Set tag version to nightly
-        if: ${{ github.ref_name == env.NIGHTLY_BRANCH }}
-        run: |
-          echo "old_version=$(cat package.json | jq -r '.version')" >> $GITHUB_ENV
-          echo "$(cat package.json | jq '.version = .version + "+nightly"')" > package.json
       - name: Retrieve tag version
         id: ref
-        run: echo "version=$(cat package.json | jq -r '.version')" >> $GITHUB_ENV
+        run: echo "version=$(node -p 'require(process.cwd() + "/package.json").version')" >> "$GITHUB_ENV"
       - name: Package & Release
         run: |
           yarn package:linux-x64
           yarn release:linux-x64
-      - name: Rename installers
-        if: ${{ github.ref_name == env.NIGHTLY_BRANCH }}
-        run: |
-          mv ./release/Zettlr-Threads-${{ env.old_version }}-x86_64.AppImage ./release/Zettlr-Threads-${{ env.version }}-x86_64.AppImage
       - name: Cache installers
         uses: actions/upload-artifact@v6
         with:
@@ -344,22 +272,13 @@ jobs:
         uses: goto-bus-stop/setup-zig@v2
       - name: Set up build environment
         run: yarn install --immutable
-      - name: Set tag version to nightly
-        if: ${{ github.ref_name == env.NIGHTLY_BRANCH }}
-        run: |
-          echo "old_version=$(cat package.json | jq -r '.version')" >> $GITHUB_ENV
-          echo "$(cat package.json | jq '.version = .version + "+nightly"')" > package.json
       - name: Retrieve tag version
         id: ref
-        run: echo "version=$(cat package.json | jq -r '.version')" >> $GITHUB_ENV
+        run: echo "version=$(node -p 'require(process.cwd() + "/package.json").version')" >> "$GITHUB_ENV"
       - name: Package & Release
         run: |
           yarn package:linux-arm
           yarn release:linux-arm
-      - name: Rename installers
-        if: ${{ github.ref_name == env.NIGHTLY_BRANCH }}
-        run: |
-          mv ./release/Zettlr-Threads-${{ env.old_version }}-arm64.AppImage ./release/Zettlr-Threads-${{ env.version }}-arm64.AppImage
       - name: Cache installers
         uses: actions/upload-artifact@v6
         with:
@@ -376,15 +295,12 @@ jobs:
   # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
   # After the three builds, this job downloads all assets, creates and verifies
   # SHA256 checksums, and finally creates a release draft and uploads all
-  # assets to it. NOTE: If the workflow detects a nightly is being built, this
-  # step rather uploads the binaries to the Zettlr server instead of creating
-  # a release draft.
+  # assets to it.
   prepare_release:
     name: Prepare release draft
     # Make sure (and wait until) the builds have succeeded
     needs:
       - build_win_x64
-      # - build_win_arm64 # DEBUG: Disable win arm for now
       - build_macos_x64
       - build_macos_arm64
       - build_linux_x64
@@ -393,21 +309,13 @@ jobs:
     steps:
       - name: Checkout branch ${{ github.ref_name }}
         uses: actions/checkout@v6
-      - name: Enable Yarn 4.x
-        run: corepack enable
       - name: Setup NodeJS ${{ env.NODE_VERSION }}
         uses: actions/setup-node@v6
         with:
           node-version: ${{ env.NODE_VERSION }}
-          cache: 'yarn'
-      - name: Set up build environment
-        run: yarn install --immutable
-      - name: Set tag version to nightly
-        if: ${{ github.ref_name == env.NIGHTLY_BRANCH }}
-        run: echo "$(cat package.json | jq '.version = .version + "+nightly"')" > package.json
       - name: Retrieve tag version
         id: ref
-        run: echo "version=$(cat package.json | jq -r '.version')" >> $GITHUB_ENV
+        run: echo "version=$(node -p 'require(process.cwd() + "/package.json").version')" >> "$GITHUB_ENV"
       - name: Make release directory
         run: mkdir ./release
       # Download all resulting assets from the previous steps.
@@ -436,9 +344,26 @@ jobs:
         with:
           name: linux_arm64
           path: ./release
+      - name: Verify expected release artifacts
+        run: |
+          cd ./release
+          expected_files=(
+            "Zettlr-Threads-${{ env.version }}-x64.exe"
+            "Zettlr-Threads-${{ env.version }}-x64.dmg"
+            "Zettlr-Threads-${{ env.version }}-arm64.dmg"
+            "Zettlr-Threads-${{ env.version }}-amd64.deb"
+            "Zettlr-Threads-${{ env.version }}-arm64.deb"
+            "Zettlr-Threads-${{ env.version }}-x86_64.rpm"
+            "Zettlr-Threads-${{ env.version }}-aarch64.rpm"
+            "Zettlr-Threads-${{ env.version }}-x86_64.AppImage"
+            "Zettlr-Threads-${{ env.version }}-arm64.AppImage"
+          )
+
+          for file in "${expected_files[@]}"; do
+            test -f "$file"
+          done
       # Generate the checksums
       - name: Generate SHA256 checksums
-        #  sha256sum "Zettlr-Threads-${{env.version}}-arm64.exe" >> "SHA256SUMS.txt" # DEBUG: Disable win arm for now
         run: |
           cd ./release
           sha256sum "Zettlr-Threads-${{ env.version }}-x64.exe" > "SHA256SUMS.txt"
@@ -458,7 +383,6 @@ jobs:
           cd ..
       # Create a new release draft
       - name: Create release draft
-        if: ${{ github.ref_name == env.RELEASE_BRANCH || github.ref_name == env.RC_BRANCH }}
         uses: softprops/action-gh-release@v2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -468,9 +392,7 @@ jobs:
           name: Release v${{ env.version }}
           body: If you can read this, we have forgotten to fill in the changelog. Sorry!
           draft: true # Always create as draft, so that we can populate the remaining values easily
-          prerelease: ${{ github.ref_name == env.RC_BRANCH }}
           # Gosh, is that convenient as opposed to earlier!
-          # ./release/Zettlr-Threads-${{ env.version }}-arm64.exe # DEBUG: Disable Windows for now
           files: |
             ./release/Zettlr-Threads-${{ env.version }}-x64.exe
             ./release/Zettlr-Threads-${{ env.version }}-x64.dmg
@@ -482,4 +404,3 @@ jobs:
             ./release/Zettlr-Threads-${{ env.version }}-x86_64.AppImage
             ./release/Zettlr-Threads-${{ env.version }}-arm64.AppImage
             ./release/SHA256SUMS.txt
-      # Else: Do nothing -> keep the artifacts, but do not do anything with them.
