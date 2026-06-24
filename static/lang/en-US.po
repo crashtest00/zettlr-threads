@@ -4750,16 +4750,13 @@ msgid "Update complete!"
 msgstr "Update complete!"
 
 #: source/tmp/win-onboarding/App.vue.ts:50
-msgid "Zettlr has been updated. You are now running Zettlr"
-msgstr "Zettlr has been updated. You are now running Zettlr"
+#, javascript-format
+msgid "%s has been updated. You are now running:"
+msgstr "%s has been updated. You are now running:"
 
 #: source/tmp/win-onboarding/App.vue.ts:51
 msgid "Get started"
 msgstr "Get started"
-
-#: source/tmp/win-onboarding/App.vue.ts:52
-msgid "See what's changed"
-msgstr "See what's changed"
 
 #: source/tmp/win-onboarding/App.vue.ts:54
 #, javascript-format
