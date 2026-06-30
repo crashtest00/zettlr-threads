@@ -1,6 +1,6 @@
 <h1 align="center">
   <a href="https://github.com/Zettlr/Zettlr">
-    <img src="https://raw.githubusercontent.com/Zettlr/Zettlr/master/resources/icons/png/256x256.png" alt="Zettlr Threads"/>
+    <img src="https://raw.githubusercontent.com/Zettlr/Zettlr/master/resources/icons/png/1024x1024.png" alt="Zettlr Threads" width="256" height="256" />
   </a>
   <br/>
   Zettlr Threads

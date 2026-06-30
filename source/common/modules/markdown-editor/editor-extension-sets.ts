@@ -61,7 +61,7 @@ import { footnoteGutter } from './plugins/footnote-gutter'
 import { commentGutter } from './plugins/comment-gutter'
 import { yamlFrontmatterLint } from './linters/yaml-frontmatter-lint'
 import {
-  mainThemes, darkMode,
+  mainThemes, darkMode, useDarkModeEditor,
   themeBerlinLight, themeBerlinDark,
   themeBielefeldLight, themeBielefeldDark,
   themeBordeauxLight, themeBordeauxDark,
@@ -172,7 +172,7 @@ function getCoreExtensions (options: CoreExtensionOptions): Extension[] {
     inputModeCompartment.of(inputMode),
     // Then, include the default keymap
     defaultKeymap(),
-    darkMode({ darkMode: options.initialConfig.darkMode, ...themes[options.initialConfig.theme] }),
+    darkMode({ darkMode: useDarkModeEditor(options.initialConfig.darkMode, options.initialConfig.darkModeEditor), ...themes[options.initialConfig.theme] }),
     // CODE FOLDING
     codeFolding(),
     Prec.low(foldGutter()), // The fold gutter should appear next to the text content
