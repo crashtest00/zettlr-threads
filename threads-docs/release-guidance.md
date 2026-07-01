@@ -69,6 +69,44 @@ Do not alter upstream-origin behavior as an incidental troubleshooting fix.
   unsigned artifacts, and resulting macOS or Windows security warnings.
 - Packaging fixes apply to future builds; do not alter published artifacts.
 
+## Create a GitHub Release Candidate
+
+For Zettlr Threads, "build the release" means running
+`.github/workflows/build.yml` for the intended release branch and commit. It
+does not mean reconstructing the GitHub Actions environment in WSL or producing
+an ad hoc collection of local artifacts.
+
+- Before dispatch, confirm that the release branch contains the intended
+  `4.6.0-threads.N` version in `package.json`, all release preparation is
+  committed, the worktree state is understood, and the corresponding
+  `v4.6.0-threads.N` tag does not already exist.
+- Dispatch the manual `Build` workflow for the exact release branch only when
+  the user has authorized the external operation. Record the branch, commit,
+  version, workflow run, and any rerun jobs.
+- Treat local work as release-readiness validation or narrow diagnosis. Tests,
+  type checks, lint, and a host-compatible package can provide useful evidence,
+  but they do not constitute a complete Zettlr Threads release candidate.
+- Do not install Wine, private RPM toolchains, macOS cross-packaging
+  workarounds, or other system dependencies merely to reproduce the complete
+  release in WSL. Missing local packaging tools are not product defects.
+- If a local diagnostic requires a dependency download and network access is
+  restricted, request the required permission. Do not misclassify sandbox or
+  authentication failures as repository failures.
+- Use the workflow's native jobs as the source of truth: Windows x64 on
+  `windows-latest`, macOS x64 on `macos-15-intel`, macOS arm64 on
+  `macos-latest`, and Linux x64 and arm64 on Ubuntu 22.04 with the workflow's
+  configured Zig toolchains.
+- Require preflight, version verification, and every native build job to
+  succeed. Diagnose a failed target from its exact Actions log and compare it
+  with the corresponding upstream job before changing code or configuration.
+- Accept the candidate only after `prepare_release` verifies all nine expected
+  installers, generates and verifies `SHA256SUMS.txt`, and creates the draft
+  GitHub Release. A locally generated AppImage, portable ZIP, or unpacked
+  application is not a substitute for that artifact set.
+- Keep the GitHub Release in draft state while reviewing artifact names,
+  checksums, release notes, installation behavior, and unsigned-build warnings.
+  Publishing the draft is a separate user-authorized operation.
+
 ## Git, CI, and Upstream Integration
 
 - Perform these operations only when the user explicitly requests them.
