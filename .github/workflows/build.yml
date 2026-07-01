@@ -401,6 +401,7 @@ jobs:
         with:
           # Populate the inputs of the release we already know
           tag_name: v${{ env.version }}
+          target_commitish: ${{ github.sha }}
           name: Release v${{ env.version }}
           body: If you can read this, we have forgotten to fill in the changelog. Sorry!
           draft: true # Always create as draft, so that we can populate the remaining values easily
