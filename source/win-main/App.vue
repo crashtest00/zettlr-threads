@@ -70,6 +70,8 @@
               v-on:jump-to-line="genericJtl($event)"
               v-on:append-comment-reply="appendCommentReply($event)"
               v-on:edit-comment-message="editCommentMessage($event)"
+              v-on:create-comment-thread="createCommentThread($event)"
+              v-on:cancel-comment-draft="cancelCommentDraft()"
               v-on:resolve-comment-thread="resolveCommentThread()"
               v-on:delete-comment-thread="deleteCommentThread()"
             ></MainSidebar>
@@ -323,6 +325,8 @@ export interface EditorCommands {
   executeCommand: boolean
   appendCommentReply: boolean
   editCommentMessage: boolean
+  createCommentThread: boolean
+  cancelCommentDraft: boolean
   resolveCommentThread: boolean
   deleteCommentThread: boolean
   data: any
@@ -338,6 +342,8 @@ const editorCommands = ref<EditorCommands>({
   executeCommand: false,
   appendCommentReply: false,
   editCommentMessage: false,
+  createCommentThread: false,
+  cancelCommentDraft: false,
   resolveCommentThread: false,
   deleteCommentThread: false,
   data: undefined
@@ -898,6 +904,15 @@ function appendCommentReply (body: string): void {
 function editCommentMessage (payload: { index: number, body: string }): void {
   editorCommands.value.data = payload
   editorCommands.value.editCommentMessage = !editorCommands.value.editCommentMessage
+}
+
+function createCommentThread (body: string): void {
+  editorCommands.value.data = body
+  editorCommands.value.createCommentThread = !editorCommands.value.createCommentThread
+}
+
+function cancelCommentDraft (): void {
+  editorCommands.value.cancelCommentDraft = !editorCommands.value.cancelCommentDraft
 }
 
 function resolveCommentThread (): void {

@@ -1,5 +1,7 @@
 # WSL2 Development Environment Setup
 
+This setup reference applies across Zettlr Threads prototype releases.
+
 ## Prerequisites
 
 - Windows 11 (recommended) or Windows 10 with WSL2 enabled

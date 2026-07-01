@@ -28,6 +28,7 @@ import { darkMode, useDarkModeEditor } from '../theme/dark-mode'
 import { markdownSyntaxHighlighter } from '../theme/syntax'
 import { defaultKeymap } from '../keymaps/default'
 import { clickListeners } from '../plugins/click-listeners'
+import { renderLinks } from '../renderers/render-links'
 
 /**
  * A transaction filter that ensures that any changes made to the view that
@@ -241,6 +242,7 @@ export function createSubviewForCell (
       markdownSyntaxHighlighter(),
       EditorView.lineWrapping,
       markdownParser(), // TODO: Config?
+      renderLinks,
       // Two custom extensions that are required for the specific use-case of
       // this single-line minimal EditorView
       hiddenSpanField.init(s => {

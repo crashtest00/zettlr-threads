@@ -1,4 +1,5 @@
 import type { CommentMessage, CommentThread, CommentThreadAuthor, CommentThreadStatus, SerializableCommentThread } from './types'
+import { parseCommentMarkers } from './markers'
 
 const MESSAGE_HEADER_RE = /^\[(user|claude) \| (.+?)\]$/
 
@@ -90,6 +91,7 @@ function parseBlock (block: string[], from: number, to: number, lineNumber: numb
     id,
     status,
     messages,
+    markers: [],
     from,
     to,
     line: lineNumber
@@ -98,6 +100,7 @@ function parseBlock (block: string[], from: number, to: number, lineNumber: numb
 
 export function parseCommentThreads (doc: string): CommentThread[] {
   const threads: CommentThread[] = []
+  const markers = parseCommentMarkers(doc)
   const lines = doc.split('\n')
   let offset = 0
 
@@ -136,6 +139,7 @@ export function parseCommentThreads (doc: string): CommentThread[] {
     const to = blockOffset + closingLine.length
     const parsed = parseBlock(block, from, to, i + 1, indent)
     if (parsed !== null) {
+      parsed.markers = markers.get(parsed.id) ?? []
       threads.push(parsed)
     }
 
@@ -156,7 +160,10 @@ export function serializeCommentThread (thread: SerializableCommentThread): stri
     ''
   ]
 
-  for (const message of thread.messages) {
+  for (const [ index, message ] of thread.messages.entries()) {
+    if (index > 0) {
+      lines.push('')
+    }
     lines.push(`[${message.author} | ${message.timestamp}]`)
     lines.push(message.body.replace(/-->/g, '--\\>'))
   }

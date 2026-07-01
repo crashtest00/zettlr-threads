@@ -14,7 +14,7 @@ A phased build of an AI-assisted writing environment, forked from Zettlr. Each p
 
 ### Tasks
 - Fork and clone the Zettlr repository
-- Configure WSL2 environment (see `wsl2-setup.md`)
+- Configure WSL2 environment (see `../wsl2-setup.md`)
 - Install dependencies and confirm dev build runs (`yarn install --immutable && yarn start`)
 - Explore key areas of the codebase:
   - `source/common/modules/markdown-editor/util/ipc-api.ts` — editor-side IPC access
@@ -33,7 +33,7 @@ The dev build runs, hot reload works, and a trivial UI change is visible.
 **Goal:** Inline comment threads that are invisible in rendered Markdown but visible in the editor gutter.
 
 ### Tasks
-- Use `docs/phase-2-comment-system-spec.md` as the implementation contract
+- Use `phase-2-comment-system-implementation-spec.md` as the implementation contract
 - Add shared comment thread parser/serializer types under `source/common/modules/markdown-editor/comments/`
 - Write parser unit tests for canonical, malformed, multiline, duplicate-ID, append-reply, and resolve cases
 - Add a CodeMirror comment gutter extension that renders a 📜 marker at each valid thread block's opening line
@@ -52,7 +52,7 @@ A user can view, add, reply to, and resolve comment threads in the editor; click
 **Goal:** Let the user mark a Markdown document ready for Claude Cowork review, using the local comment protocol in `resources/claude/CLAUDE.md`.
 
 ### Tasks
-- Use `docs/phase-3-claude-cowork-handoff-spec.md` as the implementation contract
+- Use `phase-3-claude-cowork-implementation-spec.md` as the implementation contract
 - Add a review-ready action in the comments UI for the active Markdown document
 - Ensure the active document is saved before signaling review readiness
 - Surface a clear ready-for-review state or message that Claude Cowork can act on

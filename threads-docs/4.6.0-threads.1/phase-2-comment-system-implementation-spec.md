@@ -1,6 +1,6 @@
 # Phase 2 Comment System Implementation Spec
 
-This is the handoff spec for implementing Phase 2. The PRD defines the user-facing behavior; this file defines the implementation contracts that should keep the work bounded and consistent with Zettlr's existing architecture.
+This is the implementation spec for Phase 2. The PRD defines the user-facing behavior; this file defines the implementation contracts that should keep the work bounded and consistent with Zettlr's existing architecture.
 
 ## Goal
 

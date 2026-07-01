@@ -446,6 +446,11 @@ variables. If they are present, Zettlr will produce a different binary.
 
 #### `ZETTLR_DISABLE_UPDATE_CHECK`
 
+Zettlr Threads sets this flag in its development, packaging, and release
+commands. Automatic update checks are unavailable in official Zettlr Threads
+builds; download new versions manually from the
+[Zettlr Threads GitHub Releases page](https://github.com/crashtest00/Zettlr-Threads/releases).
+
 If this environment variable is present during build, this will cause the
 resulting binary to have its built-in update-checking mechanism disabled. This
 is useful if you are repackaging the app for distribution through a package

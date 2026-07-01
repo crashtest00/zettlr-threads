@@ -1,11 +1,32 @@
 <template>
   <div id="sidebar-comments" class="comments-tab">
-    <template v-if="selectedThread !== undefined">
+    <form
+      v-if="draft !== undefined"
+      class="comment-draft"
+      v-on:submit.prevent="submitDraft"
+    >
+      <h1>{{ trans('New comment thread') }}</h1>
+      <textarea
+        ref="draftInput"
+        v-model="draftBody"
+        v-bind:aria-label="trans('Comment text')"
+        rows="8"
+      ></textarea>
+      <div>
+        <button type="button" v-on:click="emit('cancel-draft')">
+          {{ trans('Cancel') }}
+        </button>
+        <button type="submit" v-bind:disabled="draftBody.trim().length === 0">
+          {{ trans('Create thread') }}
+        </button>
+      </div>
+    </form>
+    <template v-else-if="selectedThread !== undefined">
       <header class="comment-thread-header">
         <div>
-          <h1>Comment Thread</h1>
+          <h1>{{ trans('Comment thread') }}</h1>
           <span v-bind:class="['comment-thread-status', selectedThread.status]">
-            {{ selectedThread.status }}
+            {{ threadStatus }}
           </span>
         </div>
         <div class="comment-thread-actions">
@@ -14,14 +35,14 @@
             v-bind:disabled="selectedThread.status === 'resolved'"
             v-on:click="emit('resolve')"
           >
-            Resolve
+            {{ trans('Resolve') }}
           </button>
           <button
             type="button"
             class="danger"
             v-on:click="emit('delete-thread')"
           >
-            Delete Thread
+            {{ trans('Delete thread') }}
           </button>
         </div>
       </header>
@@ -40,7 +61,8 @@
             <button
               type="button"
               class="icon-button"
-              title="Edit comment"
+              v-bind:title="trans('Edit comment')"
+              v-bind:aria-label="trans('Edit comment')"
               v-on:click="startEditing(index, message.body)"
             >
               <cds-icon shape="pencil" size="sm"></cds-icon>
@@ -53,14 +75,15 @@
           >
             <textarea
               v-model="editingBody"
+              v-bind:aria-label="trans('Edit comment text')"
               rows="5"
             ></textarea>
             <div>
               <button type="button" v-on:click="cancelEditing">
-                Cancel
+                {{ trans('Cancel') }}
               </button>
               <button type="submit" v-bind:disabled="editingBody.trim().length === 0">
-                Save
+                {{ trans('Save') }}
               </button>
             </div>
           </form>
@@ -74,15 +97,16 @@
         <textarea
           ref="replyInput"
           v-model="replyBody"
+          v-bind:aria-label="trans('Reply text')"
           rows="5"
         ></textarea>
         <button type="submit" v-bind:disabled="replyBody.trim().length === 0">
-          Reply
+          {{ trans('Reply') }}
         </button>
       </form>
     </template>
     <p v-else class="comment-empty-state">
-      No comment thread selected.
+      {{ trans('No comment thread selected.') }}
     </p>
   </div>
 </template>
@@ -90,10 +114,13 @@
 <script setup lang="ts">
 import { computed, nextTick, ref, watch } from 'vue'
 import { useWindowStateStore } from 'source/pinia'
+import { trans } from '@common/i18n-renderer'
 
 const emit = defineEmits<{
   (e: 'append-reply', body: string): void
   (e: 'edit-message', payload: { index: number, body: string }): void
+  (e: 'create-thread', body: string): void
+  (e: 'cancel-draft'): void
   (e: 'resolve'): void
   (e: 'delete-thread'): void
 }>()
@@ -103,9 +130,29 @@ const replyBody = ref('')
 const editingMessageIndex = ref<number|undefined>(undefined)
 const editingBody = ref('')
 const replyInput = ref<HTMLTextAreaElement|null>(null)
+const draftInput = ref<HTMLTextAreaElement|null>(null)
+const draftBody = ref('')
 const selectedThread = computed(() => windowStateStore.selectedCommentThread)
+const draft = computed(() => windowStateStore.commentThreadDraft)
+const threadStatus = computed(() => {
+  return selectedThread.value?.status === 'resolved'
+    ? trans('Resolved')
+    : trans('Open')
+})
 
-watch(selectedThread, () => {
+watch(draft, (newDraft) => {
+  draftBody.value = newDraft?.body ?? ''
+  if (newDraft !== undefined) {
+    nextTick()
+      .then(() => {
+        draftInput.value?.focus()
+        draftInput.value?.setSelectionRange(draftBody.value.length, draftBody.value.length)
+      })
+      .catch(err => console.error(err))
+  }
+}, { immediate: true })
+
+watch(() => selectedThread.value?.id, () => {
   replyBody.value = ''
   cancelEditing()
   nextTick()
@@ -124,6 +171,12 @@ function submitReply (): void {
   nextTick()
     .then(() => replyInput.value?.focus())
     .catch(err => console.error(err))
+}
+
+function submitDraft (): void {
+  if (draftBody.value.trim().length > 0) {
+    emit('create-thread', draftBody.value)
+  }
 }
 
 function startEditing (index: number, body: string): void {
@@ -163,6 +216,29 @@ function submitEdit (index: number): void {
       margin: 0 0 4px 0;
     }
 
+  }
+
+  .comment-draft {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+
+    h1 {
+      margin: 0;
+    }
+
+    textarea {
+      box-sizing: border-box;
+      min-height: 120px;
+      resize: vertical;
+      width: 100%;
+    }
+
+    div {
+      display: flex;
+      gap: 8px;
+      justify-content: flex-end;
+    }
   }
 
   .comment-thread-actions {

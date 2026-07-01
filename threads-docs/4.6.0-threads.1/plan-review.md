@@ -6,11 +6,12 @@ This file captures feedback on the current PRD and development plan so it can be
 
 ### 0. Phase 2 shovel-readiness update applied
 
-The Phase 2 implementation gaps are now captured in a dedicated handoff spec.
+The Phase 2 implementation gaps are now captured in a dedicated implementation
+spec.
 
 Status: APPLIED
 
-- Added `docs/phase-2-comment-system-spec.md`.
+- Added `phase-2-comment-system-implementation-spec.md`.
 - Defined parser, serializer, storage, malformed-block, duplicate-ID, and escaping behavior.
 - Defined CodeMirror gutter, editor event/method, sidebar state, add-thread UX, synchronization, and test expectations.
 - Updated the development plan to point Phase 2 agents at the spec.
