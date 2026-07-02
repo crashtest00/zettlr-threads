@@ -1,3 +1,8 @@
+
+
+
+
+
 <h1 align="center">
   <a href="https://github.com/Zettlr/Zettlr">
     <img src="https://raw.githubusercontent.com/Zettlr/Zettlr/master/resources/icons/png/1024x1024.png" alt="Zettlr Threads" width="256" height="256" />
@@ -6,7 +11,10 @@
   Zettlr Threads
 </h1>
 
+https://github.com/user-attachments/assets/3c9974c7-831f-4361-bf16-eb4dc47ce103
+
 <p align="center"><strong>An unofficial Zettlr fork for threaded comments and interactive review.</strong></p>
+
 
 <p align="center">
   <a href="https://doi.org/10.5281/zenodo.2580173">
