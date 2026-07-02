@@ -17,6 +17,9 @@ import { syntaxTree } from '@codemirror/language'
 import type { DOMEventHandlers } from '@codemirror/view'
 import type { SyntaxNode } from '@lezer/common'
 import openMarkdownLink from '../util/open-markdown-link'
+import { parseCommentThreads } from '../comments/parser'
+import { parseCommentMarkerFragment } from '../comments/markers'
+import type { CommentThread } from '../comments/types'
 
 export interface ClickListenerCallbacks {
   onWikiLink?: (url: string) => void
@@ -35,18 +38,51 @@ export interface ClickListenerCallbacks {
 export function clickListeners<T = unknown> (callbacks?: ClickListenerCallbacks): DOMEventHandlers<T> {
   return {
     mousedown (event, view) {
+      const renderedMarker = (event.target as HTMLElement|null)
+        ?.closest<HTMLElement>('[data-comment-thread-id]')
+      let pos = view.posAtCoords({ x: event.clientX, y: event.clientY })
+      let nodeAt = pos === null ? null : syntaxTree(view.state).resolve(pos, 0)
+      let linkNode: SyntaxNode|null = nodeAt
+      while (linkNode !== null && linkNode.name !== 'Link') {
+        linkNode = linkNode.parent
+      }
+
+      const urlNode = linkNode?.getChild('URL')
+      const id = renderedMarker?.dataset.commentThreadId ??
+        (urlNode !== null && urlNode !== undefined
+          ? parseCommentMarkerFragment(view.state.sliceDoc(urlNode.from, urlNode.to))
+          : undefined)
+
+      if (id !== undefined) {
+        const threads = parseCommentThreads(view.state.sliceDoc())
+        const thread = threads.find(candidate => {
+          return candidate.id === id &&
+            candidate.markers.some(marker => renderedMarker !== null || linkNode === null || (
+              marker.from === linkNode.from && marker.to === linkNode.to
+            ))
+        })
+        if (thread !== undefined) {
+          view.dom.dispatchEvent(new CustomEvent<CommentThread>('comment-thread-selected', {
+            detail: thread,
+            bubbles: true
+          }))
+          event.preventDefault()
+          return true
+        }
+      }
+
       const cmd = event.metaKey && process.platform === 'darwin'
       const ctrl = event.ctrlKey && process.platform !== 'darwin'
       if (!cmd && !ctrl) {
         return false
       }
 
-      const pos = view.posAtCoords({ x: event.clientX, y: event.clientY })
+      pos = view.posAtCoords({ x: event.clientX, y: event.clientY })
       if (pos === null) {
         return false
       }
 
-      const nodeAt = syntaxTree(view.state).resolve(pos, 0)
+      nodeAt = syntaxTree(view.state).resolve(pos, 0)
 
       // Both plain URLs as well as Zettelkasten links and tags are
       // implemented on the syntax tree.

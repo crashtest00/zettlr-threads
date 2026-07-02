@@ -51,6 +51,7 @@ import type { DocumentManagerIPCAPI, DocumentsUpdateContext } from 'source/app/s
 import type { CiteprocProviderIPCAPI } from 'source/app/service-providers/citeproc'
 import type { ProjectInfo } from 'source/common/modules/markdown-editor/plugins/project-info-field'
 import type { FileContentSearchResult } from 'source/app/service-providers/search'
+import type { CommentThread, CommentThreadDraft } from 'source/common/modules/markdown-editor/comments/types'
 
 const ipcRenderer = window.ipc
 
@@ -167,6 +168,13 @@ ipcRenderer.on('documents-update', (e, payload: { event: DP_EVENTS, context: Doc
 })
 
 ipcRenderer.on('reload-editors', _e => {
+  if (
+    currentEditor !== null &&
+    windowStateStore.commentThreadDraft?.documentPath === currentEditor.documentPath
+  ) {
+    currentEditor.cancelCommentThreadDraft(windowStateStore.commentThreadDraft.id)
+    windowStateStore.commentThreadDraft = undefined
+  }
   currentEditor?.reload().catch(err => console.error('Failed to reload editor after `reload-editors` event', err))
 })
 
@@ -182,9 +190,15 @@ onMounted(() => {
 
 onBeforeUnmount(() => {
   if (currentEditor !== null) {
+    if (windowStateStore.commentThreadDraft?.documentPath === currentEditor.documentPath) {
+      currentEditor.cancelCommentThreadDraft(windowStateStore.commentThreadDraft.id)
+      windowStateStore.commentThreadDraft = undefined
+    }
     props.persistentStateMap.set(props.file.path, currentEditor.persistentState)
     // Clear out the table of contents before unmounting the component.
     windowStateStore.tableOfContents = undefined
+    windowStateStore.commentThreads = []
+    windowStateStore.selectedCommentThread = undefined
     currentEditor.unmount()
   }
 })
@@ -200,6 +214,10 @@ onUpdated(() => {
 
   const currentFilePath = currentEditor.documentPath
   if (currentFilePath !== props.activeFile?.path) {
+    if (windowStateStore.commentThreadDraft?.documentPath === currentFilePath) {
+      currentEditor.cancelCommentThreadDraft(windowStateStore.commentThreadDraft.id)
+      windowStateStore.commentThreadDraft = undefined
+    }
     // File path has changed -> unmount and remount (duplicate code from
     // onMounted and onBeforeUnmount hooks).
     props.persistentStateMap.set(currentFilePath, currentEditor.persistentState)
@@ -384,8 +402,119 @@ watch(toRef(props.editorCommands, 'executeCommand'), () => {
   }
 
   const command: string = props.editorCommands.data
+  if (
+    command === 'insertCommentThread' &&
+    windowStateStore.commentThreadDraft?.documentPath === currentEditor.documentPath
+  ) {
+    currentEditor.cancelCommentThreadDraft(windowStateStore.commentThreadDraft.id)
+    windowStateStore.commentThreadDraft = undefined
+  }
   currentEditor.runCommand(command)
-  currentEditor.focus()
+  if (command !== 'insertCommentThread') {
+    currentEditor.focus()
+  }
+})
+
+watch(toRef(props.editorCommands, 'appendCommentReply'), () => {
+  if (props.activeFile?.path !== props.file.path || currentEditor === null) {
+    return
+  }
+
+  if (documentTreeStore.lastLeafId !== props.leafId) {
+    return
+  }
+
+  const selectedThread = windowStateStore.selectedCommentThread
+  const body: string = props.editorCommands.data
+  if (selectedThread !== undefined && typeof body === 'string') {
+    currentEditor.appendCommentReply(selectedThread, body)
+    currentEditor.focus()
+  }
+})
+
+watch(toRef(props.editorCommands, 'editCommentMessage'), () => {
+  if (props.activeFile?.path !== props.file.path || currentEditor === null) {
+    return
+  }
+
+  if (documentTreeStore.lastLeafId !== props.leafId) {
+    return
+  }
+
+  const selectedThread = windowStateStore.selectedCommentThread
+  const payload: { index?: number, body?: string } = props.editorCommands.data
+  if (
+    selectedThread !== undefined &&
+    typeof payload.index === 'number' &&
+    typeof payload.body === 'string'
+  ) {
+    currentEditor.editCommentMessage(selectedThread, payload.index, payload.body)
+    currentEditor.focus()
+  }
+})
+
+watch(toRef(props.editorCommands, 'createCommentThread'), () => {
+  if (props.activeFile?.path !== props.file.path || currentEditor === null) {
+    return
+  }
+
+  const draft = windowStateStore.commentThreadDraft
+  const body: string = props.editorCommands.data
+  if (
+    documentTreeStore.lastLeafId === props.leafId &&
+    draft !== undefined &&
+    draft.documentPath === currentEditor.documentPath &&
+    typeof body === 'string'
+  ) {
+    currentEditor.insertCommentThread(body, draft)
+    windowStateStore.commentThreadDraft = undefined
+  }
+})
+
+watch(toRef(props.editorCommands, 'cancelCommentDraft'), () => {
+  const draft = windowStateStore.commentThreadDraft
+  if (
+    props.activeFile?.path === props.file.path &&
+    documentTreeStore.lastLeafId === props.leafId &&
+    currentEditor !== null &&
+    draft !== undefined &&
+    draft.documentPath === currentEditor.documentPath
+  ) {
+    currentEditor.cancelCommentThreadDraft(draft.id)
+    windowStateStore.commentThreadDraft = undefined
+  }
+})
+
+watch(toRef(props.editorCommands, 'resolveCommentThread'), () => {
+  if (props.activeFile?.path !== props.file.path || currentEditor === null) {
+    return
+  }
+
+  if (documentTreeStore.lastLeafId !== props.leafId) {
+    return
+  }
+
+  const selectedThread = windowStateStore.selectedCommentThread
+  if (selectedThread !== undefined) {
+    currentEditor.resolveCommentThread(selectedThread)
+    currentEditor.focus()
+  }
+})
+
+watch(toRef(props.editorCommands, 'deleteCommentThread'), () => {
+  if (props.activeFile?.path !== props.file.path || currentEditor === null) {
+    return
+  }
+
+  if (documentTreeStore.lastLeafId !== props.leafId) {
+    return
+  }
+
+  const selectedThread = windowStateStore.selectedCommentThread
+  if (selectedThread !== undefined) {
+    currentEditor.deleteCommentThread(selectedThread)
+    currentEditor.focus()
+  }
 })
 
 watch(toRef(props.editorCommands, 'replaceSelection'), () => {
@@ -464,12 +593,49 @@ async function getEditorFor (doc: string): Promise<MarkdownEditor> {
     if (currentEditor === editor) {
       windowStateStore.activeDocumentInfo = currentEditor.documentInfo
       windowStateStore.tableOfContents = currentEditor.tableOfContents
+      syncCommentThreads(currentEditor.commentThreads)
     }
   })
 
   editor.on('change', () => {
     if (currentEditor === editor) {
       windowStateStore.tableOfContents = currentEditor.tableOfContents
+      syncCommentThreads(currentEditor.commentThreads)
+    }
+  })
+
+  editor.on('comment-threads-changed', (threads: CommentThread[]) => {
+    if (currentEditor === editor) {
+      syncCommentThreads(threads)
+    }
+  })
+
+  editor.on('comment-thread-selected', (thread: CommentThread) => {
+    if (currentEditor === editor) {
+      if (windowStateStore.commentThreadDraft?.documentPath === editor.documentPath) {
+        editor.cancelCommentThreadDraft(windowStateStore.commentThreadDraft.id)
+      }
+      windowStateStore.commentThreadDraft = undefined
+      windowStateStore.commentThreads = currentEditor.commentThreads
+      windowStateStore.selectedCommentThread = thread
+      configStore.setConfigValue('window.sidebarVisible', true)
+      configStore.setConfigValue('window.currentSidebarTab', 'comments')
+    }
+  })
+
+  editor.on('comment-thread-draft-created', (draft: CommentThreadDraft) => {
+    if (currentEditor === editor) {
+      const previousDraft = windowStateStore.commentThreadDraft
+      if (
+        previousDraft !== undefined &&
+        previousDraft.documentPath === editor.documentPath
+      ) {
+        editor.cancelCommentThreadDraft(previousDraft.id)
+      }
+      windowStateStore.selectedCommentThread = undefined
+      windowStateStore.commentThreadDraft = draft
+      configStore.setConfigValue('window.sidebarVisible', true)
+      configStore.setConfigValue('window.currentSidebarTab', 'comments')
     }
   })
 
@@ -563,6 +729,24 @@ async function loadDocument (): Promise<void> {
 
 function jtl (lineNumber: number): void {
   currentEditor?.jtl(lineNumber)
+}
+
+function syncCommentThreads (threads: CommentThread[]): void {
+  windowStateStore.commentThreads = threads
+
+  const selected = windowStateStore.selectedCommentThread
+  if (selected === undefined) {
+    return
+  }
+
+  const exact = threads.find(thread => thread.from === selected.from && thread.to === selected.to)
+  if (exact !== undefined) {
+    windowStateStore.selectedCommentThread = exact
+    return
+  }
+
+  const matchingIds = threads.filter(thread => thread.id === selected.id)
+  windowStateStore.selectedCommentThread = matchingIds.length === 1 ? matchingIds[0] : undefined
 }
 
 async function updateCitationKeys (library: string): Promise<void> {

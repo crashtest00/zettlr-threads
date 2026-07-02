@@ -16,6 +16,15 @@
       <ReferencesTab v-show="currentTab === 'references'"></ReferencesTab>
       <RelatedFilesTab v-show="currentTab === 'relatedFiles'"></RelatedFilesTab>
       <OtherFilesTab v-show="currentTab === 'attachments'"></OtherFilesTab>
+      <CommentsTab
+        v-show="currentTab === 'comments'"
+        v-on:append-reply="emit('append-comment-reply', $event)"
+        v-on:edit-message="emit('edit-comment-message', $event)"
+        v-on:create-thread="emit('create-comment-thread', $event)"
+        v-on:cancel-draft="emit('cancel-comment-draft')"
+        v-on:resolve="emit('resolve-comment-thread')"
+        v-on:delete-thread="emit('delete-comment-thread')"
+      ></CommentsTab>
     </div>
   </div>
 </template>
@@ -42,6 +51,7 @@ import ToCTab from './ToCTab.vue'
 import ReferencesTab from './ReferencesTab.vue'
 import RelatedFilesTab from './RelatedFilesTab.vue'
 import OtherFilesTab from './OtherFilesTab.vue'
+import CommentsTab from './CommentsTab.vue'
 import { useConfigStore } from 'source/pinia'
 
 const configStore = useConfigStore()
@@ -49,6 +59,12 @@ const configStore = useConfigStore()
 const emit = defineEmits<{
   (e: 'move-section', data: { from: number, to: number }): void
   (e: 'jump-to-line', line: number): void
+  (e: 'append-comment-reply', body: string): void
+  (e: 'edit-comment-message', payload: { index: number, body: string }): void
+  (e: 'create-comment-thread', body: string): void
+  (e: 'cancel-comment-draft'): void
+  (e: 'resolve-comment-thread'): void
+  (e: 'delete-comment-thread'): void
 }>()
 
 const currentTab = computed(() => configStore.config.window.currentSidebarTab)
@@ -77,6 +93,12 @@ const tabs = [
     id: 'attachments',
     target: 'sidebar-files',
     label: trans('Other files')
+  },
+  {
+    icon: 'chat-bubble',
+    id: 'comments',
+    target: 'sidebar-comments',
+    label: trans('Comments')
   }
 ]
 

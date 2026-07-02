@@ -5,6 +5,10 @@ const { FusesPlugin } = require('@electron-forge/plugin-fuses')
 const { FuseV1Options, FuseVersion } = require('@electron/fuses')
 const { getGitHash } = require('./scripts/get-git-hash.js')
 
+const extraResources = [
+  'resources/claude'
+]
+
 /**
  * This function runs the get-pandoc script in order to download the requested
  * version of Pandoc. This way we can guarantee that the correct Pandoc version
@@ -86,7 +90,7 @@ module.exports = {
   hooks: {
     preStart: async (forgeConfig) => {
       if (process.env.ZETTLR_DISABLE_UPDATE_CHECK !== undefined) {
-        console.warn('Detected the environment variable ZETTLR_DISABLE_UPDATE_CHECK. This build of Zettlr WILL NOT HAVE UPDATES ENABLED. Please ensure this was intended!')
+        console.warn('Detected the environment variable ZETTLR_DISABLE_UPDATE_CHECK. This build of Zettlr Threads WILL NOT HAVE UPDATES ENABLED. Please ensure this was intended!')
       }
     },
     generateAssets: async (forgeConfig, targetPlatform, targetArch) => {
@@ -99,17 +103,21 @@ module.exports = {
       // build was based off on.
       process.env.GIT_COMMIT_HASH = await getGitHash()
 
-      // Second, we need to make sure we can bundle Pandoc.
-      if (process.env.BUNDLE_PANDOC === '0') {
-        console.warn('Detected environment variable BUNDLE_PANDOC -- this build will not be bundled with Pandoc!')
-        return
-      }
-
       const isMacOS = targetPlatform === 'darwin'
       const isLinux = targetPlatform === 'linux'
       const isWin32 = targetPlatform === 'win32'
       const isArm64 = targetArch === 'arm64'
       const is64Bit = targetArch === 'x64'
+
+      if (isLinux) {
+        forgeConfig.packagerConfig.executableName = 'zettlr-threads'
+      }
+
+      // Second, we need to make sure we can bundle Pandoc.
+      if (process.env.BUNDLE_PANDOC === '0') {
+        console.warn('Detected environment variable BUNDLE_PANDOC -- this build will not be bundled with Pandoc!')
+        return
+      }
 
       // macOS has Rosetta 2 built-in, so we can bundle Pandoc 64bit
       const supportsPandoc = is64Bit || (isMacOS && isArm64) || (isLinux && isArm64)
@@ -180,8 +188,9 @@ module.exports = {
           arch = 'aarch64' // Fedora ARM
         } // Else: Keep it at either x64 or arm64
 
-        // Now we can finally build the correct file name
-        const baseName = `${productName}-${version}-${arch}${ext}`
+        // Keep release artifact names shell- and package-manager-friendly.
+        const artifactProductName = productName.replace(/\s+/g, '-')
+        const baseName = `${artifactProductName}-${version}-${arch}${ext}`
 
         // Move the file
         await fs.rename(sourceFile, path.join(releaseDir, baseName))
@@ -194,7 +203,7 @@ module.exports = {
     force: false // NOTE: By now covered by the global flag on packaging.
   },
   packagerConfig: {
-    appBundleId: 'com.zettlr.app',
+    appBundleId: 'com.crashtest00.zettlrthreads',
     // This info.plist file contains file association for the app on macOS.
     extendInfo: './scripts/assets/info.plist',
     asar: {
@@ -205,47 +214,22 @@ module.exports = {
       unpack: '*.{node,dll}'
     },
     darwinDarkModeSupport: 'true',
-    // Electron-forge automatically adds the file extension based on OS
+    // Electron-forge automatically adds the file extension based on OS.
+    // Linux overrides executableName in the generateAssets hook so deb/rpm
+    // makers can use the lowercase zettlr-threads command name.
     icon: './resources/icons/icon',
-    // The binary name should always be uppercase Zettlr. As we cannot specify
-    // this on a per-maker basis, we need to output everything this way. With
-    // this property, macOS builds are named Zettlr.app, Windows builds
-    // Zettlr.exe and the linux binaries are called Zettlr (albeit on Linux,
-    // lowercase is preferred). Due to the last issue (Linux binaries being
-    // with capital Z) we have to explicitly set executableName on the Linux
-    // target.
-    name: 'Zettlr',
-    // The certificate is written to the default keychain during CI build.
-    // See ./scripts/add-osx-cert.sh
-    osxSign: {
-      identity: 'Developer ID Application: Hendrik Erz (QS52BN8W68)',
-      'hardened-runtime': true,
-      'gatekeeper-assess': false,
-      entitlements: 'scripts/assets/entitlements.plist',
-      'entitlements-inherit': 'scripts/assets/entitlements.plist',
-      'signature-flags': 'library'
-    },
-    // Since electron-notarize 1.1.0 it will throw instead of simply print a
-    // warning to the console, so we have to actively check if we should
-    // notarize or not. We do so by checking for the necessary environment
-    // variables and set the osxNotarize option to false otherwise to prevent
-    // notarization.
-    osxNotarize: ('APPLE_ID' in process.env && 'APPLE_ID_PASS' in process.env)
-      ? {
-          tool: 'notarytool',
-          appleId: process.env.APPLE_ID,
-          appleIdPassword: process.env.APPLE_ID_PASS,
-          teamId: process.env.APPLE_TEAM_ID
-        }
-      : false,
+    name: 'Zettlr Threads',
+    osxSign: false,
+    osxNotarize: false,
     // On macOS, we need to provide the app icon so that it gets copied into the
     // resources directory. After the `generateAssets` step, this will also
     // include the Pandoc binary (this is why we cannot leave `extraResource`
     // undefined).
     extraResource: process.platform === 'darwin' ? [
+      ...extraResources,
       'resources/icons/icon.code.icns',
       'resources/icons/Assets.car' // Contains the new Liquid Glass app icon
-    ] : []
+    ] : extraResources
   },
   plugins: [
     {
@@ -307,21 +291,21 @@ module.exports = {
       name: '@electron-forge/maker-deb',
       config: {
         options: {
-          name: 'zettlr',
-          bin: 'Zettlr', // See packagerConfig.name property,
+          name: 'zettlr-threads',
+          bin: 'zettlr-threads',
           categories: [ 'Office', 'Education', 'Science' ],
           section: 'editors',
           // size: 500, // NOTE: Estimate, need to refine
-          description: 'Your one-stop publication workbench.',
-          productDescription: 'Your one-stop publication workbench.',
+          description: 'Unofficial Zettlr fork for threaded comments and interactive review.',
+          productDescription: 'Unofficial Zettlr fork for threaded comments and interactive review.',
           recommends: [ 'quarto', 'pandoc', 'texlive | texlive-base | texlive-full' ],
           genericName: 'Markdown Editor',
           // Electron forge recommends 512px
           icon: './resources/icons/png/512x512.png',
           priority: 'optional',
           mimeType: [ 'text/markdown', 'application/x-tex', 'application/json', 'application/yaml' ],
-          maintainer: 'Hendrik Erz',
-          homepage: 'https://www.zettlr.com'
+          maintainer: 'crashtest00',
+          homepage: 'https://github.com/crashtest00/Zettlr-Threads'
         }
       }
     },
@@ -329,18 +313,18 @@ module.exports = {
       name: '@electron-forge/maker-rpm',
       config: {
         options: {
-          name: 'zettlr',
-          bin: 'Zettlr', // See packagerConfig.name property,
+          name: 'zettlr-threads',
+          bin: 'zettlr-threads',
           categories: [ 'Office', 'Education', 'Science' ],
-          description: 'Your one-stop publication workbench.',
-          productDescription: 'Your one-stop publication workbench.',
-          productName: 'Zettlr',
+          description: 'Unofficial Zettlr fork for threaded comments and interactive review.',
+          productDescription: 'Unofficial Zettlr fork for threaded comments and interactive review.',
+          productName: 'Zettlr Threads',
           genericName: 'Markdown Editor',
           // Electron forge recommends 512px
           icon: './resources/icons/png/512x512.png',
           license: 'GPL-3.0',
           mimeType: [ 'text/markdown', 'application/x-tex', 'application/json', 'application/yaml' ],
-          homepage: 'https://www.zettlr.com'
+          homepage: 'https://github.com/crashtest00/Zettlr-Threads'
         }
       }
     },

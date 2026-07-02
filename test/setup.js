@@ -46,11 +46,19 @@ function mockBrowser () {
   }
 
   // Mock the navigator.clipboard readText() and writeText()
-  navigator.clipboard = {
+  const clipboard = {
     _data: '',
     readText() { return this._data },
     writeText(text) { this._data = text }
   }
+  Object.defineProperty(window.navigator, 'clipboard', {
+    configurable: true,
+    value: clipboard
+  })
+  Object.defineProperty(global, 'navigator', {
+    configurable: true,
+    value: window.navigator
+  })
 
   global.window = window
   global.document = window.document

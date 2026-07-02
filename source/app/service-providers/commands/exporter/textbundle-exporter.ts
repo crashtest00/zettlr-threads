@@ -133,7 +133,7 @@ async function makeTextbundle (sourceFile: string, targetFile: string, textpack:
   await fs.writeFile(path.join(targetFile, 'info.json'), JSON.stringify({
     version: 2,
     type: 'net.daringfireball.markdown',
-    creatorIdentifier: 'com.zettlr.app',
+    creatorIdentifier: 'com.crashtest00.zettlrthreads',
     sourceURL: overrideFilename ?? sourceFile
   }, undefined, 4), { encoding: 'utf8' })
 

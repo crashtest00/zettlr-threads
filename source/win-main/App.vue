@@ -68,6 +68,12 @@
             <MainSidebar
               v-on:move-section="moveSection($event)"
               v-on:jump-to-line="genericJtl($event)"
+              v-on:append-comment-reply="appendCommentReply($event)"
+              v-on:edit-comment-message="editCommentMessage($event)"
+              v-on:create-comment-thread="createCommentThread($event)"
+              v-on:cancel-comment-draft="cancelCommentDraft()"
+              v-on:resolve-comment-thread="resolveCommentThread()"
+              v-on:delete-comment-thread="deleteCommentThread()"
             ></MainSidebar>
           </template>
         </SplitView>
@@ -185,6 +191,7 @@ import { type AnyDescriptor } from 'source/types/common/fsal'
 import type { DocumentManagerIPCAPI } from 'source/app/service-providers/documents'
 import { TaskStatus } from 'source/pinia/lrt-store'
 import PopoverLRT from './PopoverLRT.vue'
+import PACKAGE_JSON from '../../package.json'
 
 const ipcRenderer = window.ipc
 
@@ -316,6 +323,12 @@ export interface EditorCommands {
   replaceSelection: boolean
   insertPandoc: boolean
   executeCommand: boolean
+  appendCommentReply: boolean
+  editCommentMessage: boolean
+  createCommentThread: boolean
+  cancelCommentDraft: boolean
+  resolveCommentThread: boolean
+  deleteCommentThread: boolean
   data: any
 }
 
@@ -327,6 +340,12 @@ const editorCommands = ref<EditorCommands>({
   replaceSelection: false,
   insertPandoc: false,
   executeCommand: false,
+  appendCommentReply: false,
+  editCommentMessage: false,
+  createCommentThread: false,
+  cancelCommentDraft: false,
+  resolveCommentThread: false,
+  deleteCommentThread: false,
   data: undefined
 })
 
@@ -338,12 +357,13 @@ const sidebarsBeforeDistractionfree = ref<{ fileManager: boolean, sidebar: boole
 const sidebarVisible = computed<boolean>(() => configStore.config.window.sidebarVisible)
 const activeFile = computed(() => documentTreeStore.lastLeafActiveFile)
 const shouldCountChars = computed<boolean>(() => configStore.config.editor.countChars)
+const productName = PACKAGE_JSON.productName
 const windowTitle = computed<string>(() => {
   if (activeFile.value === undefined) {
-    return 'Zettlr'
+    return productName
   }
 
-  return `Zettlr - ${getDocumentTitle(activeFile.value)}`
+  return `${productName} - ${getDocumentTitle(activeFile.value)}`
 })
 
 // Simple state machine to trigger which of the three shows up when. Below's the
@@ -526,6 +546,13 @@ const toolbarControls = computed<ToolbarControl[]>(() => {
       title: trans('Insert comment'),
       icon: 'code',
       visible: getToolbarButtonDisplay('showMarkdownCommentButton')
+    },
+    {
+      type: 'button',
+      id: 'insertCommentThread',
+      title: trans('Insert comment thread'),
+      icon: 'chat-bubble',
+      visible: true
     },
     {
       type: 'button',
@@ -869,6 +896,33 @@ function moveSection (data: { from: number, to: number }): void {
   editorCommands.value.moveSection = !editorCommands.value.moveSection
 }
 
+function appendCommentReply (body: string): void {
+  editorCommands.value.data = body
+  editorCommands.value.appendCommentReply = !editorCommands.value.appendCommentReply
+}
+
+function editCommentMessage (payload: { index: number, body: string }): void {
+  editorCommands.value.data = payload
+  editorCommands.value.editCommentMessage = !editorCommands.value.editCommentMessage
+}
+
+function createCommentThread (body: string): void {
+  editorCommands.value.data = body
+  editorCommands.value.createCommentThread = !editorCommands.value.createCommentThread
+}
+
+function cancelCommentDraft (): void {
+  editorCommands.value.cancelCommentDraft = !editorCommands.value.cancelCommentDraft
+}
+
+function resolveCommentThread (): void {
+  editorCommands.value.resolveCommentThread = !editorCommands.value.resolveCommentThread
+}
+
+function deleteCommentThread (): void {
+  editorCommands.value.deleteCommentThread = !editorCommands.value.deleteCommentThread
+}
+
 function startGlobalSearch (terms: string): void {
   mainSplitViewVisibleComponent.value = 'globalSearch'
   configStore.setConfigValue('window.fileManagerVisible', true)
@@ -935,6 +989,9 @@ function handleClick (clickedID?: string): void {
     showDocInfoPopover.value = !showDocInfoPopover.value
   } else if (clickedID === 'pandocDivOrSpan') {
     showPandocPopover.value = !showPandocPopover.value
+  } else if (clickedID === 'insertCommentThread') {
+    editorCommands.value.data = clickedID
+    editorCommands.value.executeCommand = !editorCommands.value.executeCommand
   } else if (clickedID !== undefined && clickedID.startsWith('markdown') && clickedID.length > 8) {
     // The user clicked a command button, so we just have to run that.
     editorCommands.value.data = clickedID

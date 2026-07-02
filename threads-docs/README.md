@@ -1,0 +1,65 @@
+# Zettlr Threads Documentation
+
+This directory records the product and implementation history of the Zettlr
+Threads fork. Documentation is grouped by prototype release so that current
+requirements remain clear without erasing how earlier prototypes were designed.
+
+## Required Reading
+
+Before changing Zettlr Threads:
+
+1. Read [implementation-guidance.md](implementation-guidance.md).
+2. Read [test-plan.md](test-plan.md).
+3. Read the PRD, plan, and plan review for the target prototype.
+4. Read any phase implementation spec named by that plan.
+5. Read and keep
+   [`resources/claude/CLAUDE.md`](../resources/claude/CLAUDE.md) synchronized
+   with the implemented comment protocol.
+
+## Versioning
+
+The numeric version must match the upstream Zettlr version. Fork prototypes
+increment only the `threads.N` suffix.
+
+For example:
+
+- `4.6.0-threads.1` is the first Threads prototype based on upstream `4.6.0`.
+- `4.6.0-threads.2` is the second Threads prototype based on the same upstream
+  release.
+- Moving to a different upstream release changes the numeric version rather
+  than independently advancing it as a Threads feature version.
+
+The package version changes when implementation of a prototype begins, not when
+its planning documents are first drafted.
+
+## Prototype Releases
+
+### 4.6.0-threads.1
+
+The first prototype introduced local HTML comment threads, gutter markers, a
+comments sidebar, and the Claude Cowork handoff.
+
+- [PRD](4.6.0-threads.1/prd.md)
+- [Development plan](4.6.0-threads.1/plan.md)
+- [Plan review](4.6.0-threads.1/plan-review.md)
+- [Phase 2 comment-system implementation spec](4.6.0-threads.1/phase-2-comment-system-implementation-spec.md)
+- [Phase 3 Claude Cowork implementation spec](4.6.0-threads.1/phase-3-claude-cowork-implementation-spec.md)
+
+These documents are historical. Do not silently revise their product decisions
+to describe later prototypes.
+
+### 4.6.0-threads.2
+
+The second prototype replaces line-based gutter placement with visible,
+character-anchored Markdown markers and stores thread blocks at the end of the
+document.
+
+- [PRD](4.6.0-threads.2/prd.md)
+- [Development plan](4.6.0-threads.2/plan.md)
+- [Plan review](4.6.0-threads.2/plan-review.md)
+
+## General References
+
+- [User test plan](test-plan.md)
+- [WSL2 development setup](wsl2-setup.md)
+- [Release and upstream-integration guidance](release-guidance.md)

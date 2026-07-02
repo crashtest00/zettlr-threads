@@ -46,7 +46,7 @@ if (!app.requestSingleInstanceLock()) {
 // To show notifications properly on Windows, we must manually set the appUserModelID
 // See https://www.electronjs.org/docs/tutorial/notifications#windows
 if (process.platform === 'win32') {
-  app.setAppUserModelId('com.zettlr.app')
+  app.setAppUserModelId('com.crashtest00.zettlrthreads')
 }
 
 // Setting custom data dir for user configuration files.

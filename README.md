@@ -1,12 +1,12 @@
 <h1 align="center">
   <a href="https://github.com/Zettlr/Zettlr">
-    <img src="https://raw.githubusercontent.com/Zettlr/Zettlr/master/resources/icons/png/1024x1024.png" alt="Zettlr" width="256" height="256" />
+    <img src="https://raw.githubusercontent.com/Zettlr/Zettlr/master/resources/icons/png/1024x1024.png" alt="Zettlr Threads" width="256" height="256" />
   </a>
   <br/>
-  Zettlr [<em>ˈset·lər</em>]
+  Zettlr Threads
 </h1>
 
-<p align="center"><strong>Your One-Stop Publication Workbench</strong>.</p>
+<p align="center"><strong>An unofficial Zettlr fork for threaded comments and interactive review.</strong></p>
 
 <p align="center">
   <a href="https://doi.org/10.5281/zenodo.2580173">
@@ -15,26 +15,32 @@
   <a href="https://www.gnu.org/licenses/gpl-3.0">
     <img src="https://img.shields.io/badge/License-GPLv3-blue.svg" alt="License: GNU GPL v3">
   </a>
-  <a href="https://www.zettlr.com/download">
-    <img alt="GitHub tag (latest by date)" src="https://img.shields.io/github/tag-date/Zettlr/Zettlr.svg?label=latest">
+  <a href="https://github.com/crashtest00/Zettlr-Threads/releases">
+    <img alt="GitHub tag (latest by date)" src="https://img.shields.io/github/tag-date/crashtest00/Zettlr-Threads.svg?label=latest">
   </a>
-  <img alt="GitHub All Releases" src="https://img.shields.io/github/downloads/Zettlr/Zettlr/total.svg">
-  <img alt="Unit Tests / Lint" src="https://github.com/Zettlr/Zettlr/actions/workflows/check.yml/badge.svg">
-  <img alt="Build" src="https://github.com/Zettlr/Zettlr/workflows/Build/badge.svg">
+  <img alt="GitHub All Releases" src="https://img.shields.io/github/downloads/crashtest00/Zettlr-Threads/total.svg">
+  <img alt="Unit Tests / Lint" src="https://github.com/crashtest00/Zettlr-Threads/actions/workflows/check.yml/badge.svg">
+  <img alt="Build" src="https://github.com/crashtest00/Zettlr-Threads/workflows/Build/badge.svg">
 </p>
 
 <p align="center">
-  <a href="https://www.zettlr.com/" target="_blank">Homepage</a> |
-  <a href="https://www.zettlr.com/download">Download</a> |
+  <a href="https://github.com/crashtest00/Zettlr-Threads" target="_blank">Fork Homepage</a> |
+  <a href="https://github.com/crashtest00/Zettlr-Threads/releases">Download</a> |
   <a href="https://docs.zettlr.com/" target="_blank">Documentation</a> |
   <a href="https://forum.zettlr.com/" target="_blank">Community Forum</a> |
   <a href="https://go.zettlr.com/discord" target="_blank">Discord</a> |
   <a href="#contributing">Contributing</a> |
-  <a href="https://zettlr.com/supporters" target="_blank">Support Us</a> |
-  <a rel="me" href="https://fosstodon.org/@zettlr" target="_blank">Mastodon</a>
+  <a href="https://github.com/Zettlr/Zettlr" target="_blank">Upstream Zettlr</a>
 </p>
 
 ![screenshot](/resources/screenshots/zettlr_view.png)
+
+> [!IMPORTANT]
+> Zettlr Threads is an unofficial fork of
+> [Zettlr](https://github.com/Zettlr/Zettlr). It keeps the Zettlr foundation
+> visible because this project exists thanks to upstream's work. The "Threads"
+> suffix names what this fork adds: local comment threads, review surfaces, and
+> a more interactive writing workflow.
 
 Zettlr brings simplicity back to your texts. Open-minded writing that adapts to
 your style. Fast information retrieval that finds what matters to you. Versatile
@@ -45,7 +51,7 @@ Focus on what matters to you.
 
 **Publish, not perish.**
 
-> [Learn more on our website](https://zettlr.com/).
+> [Learn more on the upstream Zettlr website](https://zettlr.com/).
 
 ***
 
@@ -82,18 +88,18 @@ Focus on what matters to you.
 - Support for state of the art knowledge management techniques (**Zettelkasten**)
 - A powerful **full text search** that helps you find anything, anywhere
 
-… and the best is: **Zettlr is [Free and Open Source Software (FOSS)](https://en.wikipedia.org/wiki/Free_and_open-source_software)!**
+… and the best is: **Zettlr Threads is [Free and Open Source Software (FOSS)](https://en.wikipedia.org/wiki/Free_and_open-source_software)!**
 
 ## Getting Started
 
-[Download the latest release](https://www.zettlr.com/download/) and install it
-as you would any other app. Currently supported are macOS, Windows, and most
-Linux distributions.
+[Download the latest Zettlr Threads release](https://github.com/crashtest00/Zettlr-Threads/releases)
+and install it as you would any other app. Currently supported are macOS,
+Windows, and most Linux distributions.
 
-On our website and here on GitHub, we provide a set of installers for the most
-common use-cases. We provide both 64-bit installers as well as installers for
-ARM systems (called "Apple Silicon" in the macOS ecosystem). 32-bit is not
-supported. We offer the following binaries directly:
+This fork provides installers through GitHub Releases for the most common
+use-cases. We provide both 64-bit installers as well as installers for ARM
+systems (called "Apple Silicon" in the macOS ecosystem). 32-bit is not
+supported. The release workflow can produce the following binaries:
 
 * macOS (Intel and Apple Silicon)
 * Windows (x64)
@@ -101,8 +107,8 @@ supported. We offer the following binaries directly:
 * Fedora/Red Hat (x64 and ARM)
 * AppImage (x64 and ARM)
 
-Thanks to our community, we can also offer you a variety of other setup
-opportunities via package managers:
+Upstream Zettlr is also available through package managers. These install
+official Zettlr, not Zettlr Threads:
 
 * [Homebrew (macOS)](https://formulae.brew.sh/cask/zettlr)
 * [Aptitude (Ubuntu/Debian)](https://apt.zettlr.com)
@@ -114,12 +120,12 @@ All other [platforms that Electron supports](https://www.electronjs.org/docs/lat
 are supported as well, but you will need to build the app yourself.
 
 > [!TIP]
-> Zettlr is fully supported by community donations. You can donate once, or
-> monthly. [Learn more on our website](https://www.zettlr.com/supporters).
+> Upstream Zettlr is fully supported by community donations. You can donate
+> once, or monthly. [Learn more on the Zettlr website](https://www.zettlr.com/supporters).
 > Thank you!
 
-After you have installed Zettlr, [head over to our documentation](https://docs.zettlr.com/)
-to get to know Zettlr. The app ships with a small tutorial which covers the basics.
+After you have installed Zettlr Threads, [head over to the upstream documentation](https://docs.zettlr.com/)
+to get to know the Zettlr foundation. The app ships with a small tutorial which covers the basics.
 
 If you are new to Zettlr, refer to our
 [first time users guide](https://docs.zettlr.com/en/first-time-users/first-steps/).
@@ -439,6 +445,11 @@ certain behaviors into the final binary. These usually come as environment
 variables. If they are present, Zettlr will produce a different binary.
 
 #### `ZETTLR_DISABLE_UPDATE_CHECK`
+
+Zettlr Threads sets this flag in its development, packaging, and release
+commands. Automatic update checks are unavailable in official Zettlr Threads
+builds; download new versions manually from the
+[Zettlr Threads GitHub Releases page](https://github.com/crashtest00/Zettlr-Threads/releases).
 
 If this environment variable is present during build, this will cause the
 resulting binary to have its built-in update-checking mechanism disabled. This
