@@ -4,6 +4,8 @@ import { history, redo, undo } from '@codemirror/commands'
 import { markdown } from '@codemirror/lang-markdown'
 import markdownParser from 'source/common/modules/markdown-editor/parser/markdown-parser'
 import { appendUserReply, resolveThread } from 'source/common/modules/markdown-editor/comments/commands'
+import { shouldCancelCommentThreadDraft } from 'source/common/modules/markdown-editor/comments/drafts'
+import type { CommentThreadDraft } from 'source/common/modules/markdown-editor/comments/types'
 import { parseCommentThreads, replaceCommentThreadBlock, serializeCommentThread } from 'source/common/modules/markdown-editor/comments/parser'
 import {
   appendThreadBlock,
@@ -29,6 +31,29 @@ This feels weak. Can you suggest a rewrite?
 -->`
 
 describe('Comment threads', function () {
+  it('does not cancel the durable marker when selecting a promoted draft', () => {
+    const draft: CommentThreadDraft = {
+      id: 'c1',
+      body: 'New comment',
+      position: 4,
+      documentPath: '/workspace/note.md'
+    }
+    const selectedThread = parseCommentThreads(
+      `${formatCommentMarker('c1')}\n\n${CANONICAL_THREAD}`
+    )[0]
+
+    strictEqual(shouldCancelCommentThreadDraft(draft, selectedThread, '/workspace/note.md'), false)
+    strictEqual(
+      shouldCancelCommentThreadDraft(
+        { ...draft, id: 'different-draft' },
+        selectedThread,
+        '/workspace/note.md'
+      ),
+      true
+    )
+    strictEqual(shouldCancelCommentThreadDraft(draft, selectedThread, '/workspace/other.md'), false)
+  })
+
   it('formats and parses open and resolved markers', () => {
     const doc = `${formatCommentMarker('c1')} ${formatCommentMarker('c2', 'resolved')}`
     const markers = parseCommentMarkers(doc)

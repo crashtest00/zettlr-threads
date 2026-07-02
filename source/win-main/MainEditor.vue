@@ -52,6 +52,7 @@ import type { CiteprocProviderIPCAPI } from 'source/app/service-providers/citepr
 import type { ProjectInfo } from 'source/common/modules/markdown-editor/plugins/project-info-field'
 import type { FileContentSearchResult } from 'source/app/service-providers/search'
 import type { CommentThread, CommentThreadDraft } from 'source/common/modules/markdown-editor/comments/types'
+import { shouldCancelCommentThreadDraft } from 'source/common/modules/markdown-editor/comments/drafts'
 
 const ipcRenderer = window.ipc
 
@@ -612,8 +613,13 @@ async function getEditorFor (doc: string): Promise<MarkdownEditor> {
 
   editor.on('comment-thread-selected', (thread: CommentThread) => {
     if (currentEditor === editor) {
-      if (windowStateStore.commentThreadDraft?.documentPath === editor.documentPath) {
-        editor.cancelCommentThreadDraft(windowStateStore.commentThreadDraft.id)
+      const draft = windowStateStore.commentThreadDraft
+      if (shouldCancelCommentThreadDraft(
+        draft,
+        thread,
+        editor.documentPath
+      )) {
+        editor.cancelCommentThreadDraft(draft.id)
       }
       windowStateStore.commentThreadDraft = undefined
       windowStateStore.commentThreads = currentEditor.commentThreads
