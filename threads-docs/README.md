@@ -58,6 +58,15 @@ document.
 - [Development plan](4.6.0-threads.2/plan.md)
 - [Plan review](4.6.0-threads.2/plan-review.md)
 
+### 4.6.0-threads.2.1
+
+This patch prevents draft-abandonment cleanup from deleting a newly promoted
+thread's durable marker.
+
+- [PRD](4.6.0-threads.2.1/prd.md)
+- [Development plan](4.6.0-threads.2.1/plan.md)
+- [Plan review](4.6.0-threads.2.1/plan-review.md)
+
 ## General References
 
 - [User test plan](test-plan.md)

@@ -10,7 +10,7 @@
     "type": "git",
     "url": "git://github.com/crashtest00/Zettlr-Threads.git"
   },
-  "version": "4.6.0-threads.2",
+  "version": "4.6.0-threads.2.1",
   "license": "GPL-3.0",
   "description": "An unofficial Zettlr fork for threaded comments and interactive review.",
   "main": ".webpack/main",

@@ -154,6 +154,26 @@ it for behavior that exists only in a future plan.
 - Before handoff, confirm the worktree state and distinguish changes made for
   the task from pre-existing work.
 
+### Managed Workspace Permissions
+
+In managed Codex workspaces, the repository files may be writable while
+`.git` remains explicitly read-only. Commands that create or update branches,
+the index, refs, or lock files therefore require an escalated terminal call
+even when the user has already authorized the Git operation. Request
+`require_escalated` up front and explain that the command must write Git
+metadata inside `.git`. If the permission reviewer rejects the escalation,
+report an environment-policy blocker; trying an equivalent Git spelling does
+not bypass the restriction.
+
+The development command may also need escalation. Electron Forge binds its
+local multi-logger to `0.0.0.0:9001`; a sandboxed launch can fail with
+`listen EPERM` before the application starts. Retry the same development
+command with `require_escalated` and explain that Forge needs permission to
+bind its local logging port. Treat a rejected escalation as an environment
+blocker, not an application defect. In environments where `yarn` is not on
+`PATH`, use `corepack yarn start` and the corresponding `corepack yarn`
+variants for checks.
+
 ## Documentation Discipline
 
 - Keep historical prototype documents intact except for link repairs,
