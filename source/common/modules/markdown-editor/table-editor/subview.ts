@@ -24,10 +24,11 @@ import { tableEditorKeymap } from '../keymaps/table-editor'
 import { dispatchFromSubview, maybeDispatchToSubview, syncAnnotation } from './util/data-exchange'
 import { configField, type EditorConfiguration } from '../util/configuration'
 import { getMainEditorThemes } from '../editor-extension-sets'
-import { darkMode } from '../theme/dark-mode'
+import { darkMode, useDarkModeEditor } from '../theme/dark-mode'
 import { markdownSyntaxHighlighter } from '../theme/syntax'
 import { defaultKeymap } from '../keymaps/default'
 import { clickListeners } from '../plugins/click-listeners'
+import { renderLinks } from '../renderers/render-links'
 
 /**
  * A transaction filter that ensures that any changes made to the view that
@@ -236,11 +237,12 @@ export function createSubviewForCell (
       // The config field will automagically update since we forward any effects
       // to the subview.
       configField.init(_state => cfg),
-      darkMode({ darkMode: cfg.darkMode, ...themes[cfg.theme] }),
+      darkMode({ darkMode: useDarkModeEditor(cfg.darkMode, cfg.darkModeEditor), ...themes[cfg.theme] }),
       syntaxHighlighting(defaultHighlightStyle),
       markdownSyntaxHighlighter(),
       EditorView.lineWrapping,
       markdownParser(), // TODO: Config?
+      renderLinks,
       // Two custom extensions that are required for the specific use-case of
       // this single-line minimal EditorView
       hiddenSpanField.init(s => {

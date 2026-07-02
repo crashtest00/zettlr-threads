@@ -42,7 +42,8 @@ Yes, but tighten it further.
 - `@status` — `open` or `resolved`
 - Message timestamps use ISO 8601 with local offset
 
-Implementation details and parser edge cases are defined in `docs/phase-2-comment-system-spec.md`.
+Implementation details and parser edge cases are defined in
+`phase-2-comment-system-implementation-spec.md`.
 
 ### Marker Indicator
 

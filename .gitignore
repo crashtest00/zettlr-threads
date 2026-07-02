@@ -20,6 +20,9 @@ build/
 # Ignore the custom user test config
 test-config.yml
 
+# Ignore local Zettlr Threads user-test fixtures and results
+/threads-docs/tests/
+
 # Hidden files and stuff
 /**/.DS_Store
 

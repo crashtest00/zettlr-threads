@@ -30,6 +30,33 @@ import { configField } from '../util/configuration'
 import { interceptAnchorClicks } from './util/anchor-callbacks'
 import openMarkdownLink from '../util/open-markdown-link'
 import { sanitizeHTML } from 'source/common/util/sanitize-html'
+import { parseCommentThreads } from '../comments/parser'
+import { renderCommentMarkerLinks } from '../renderers/render-links'
+
+function commentMarkerFromEvent (event: Event): HTMLElement|undefined {
+  return event.composedPath().find((target): target is HTMLElement => {
+    return target instanceof HTMLElement && target.dataset.commentThreadId !== undefined
+  })
+}
+
+function selectCommentMarker (event: Event, view: EditorView): boolean {
+  const marker = commentMarkerFromEvent(event)
+  const thread = marker === undefined
+    ? undefined
+    : parseCommentThreads(view.state.sliceDoc())
+      .find(candidate => candidate.id === marker.dataset.commentThreadId)
+  if (thread === undefined) {
+    return false
+  }
+
+  view.dom.dispatchEvent(new CustomEvent('comment-thread-selected', {
+    detail: thread,
+    bubbles: true
+  }))
+  event.preventDefault()
+  event.stopPropagation()
+  return true
+}
 
 /**
  * This holds the last measured height of each rendered table to provide
@@ -123,6 +150,13 @@ export class TableWidget extends WidgetType {
       }
 
       updateTable(table, tableAST, view)
+      wrapper.addEventListener('mousedown', event => selectCommentMarker(event, view), true)
+      wrapper.addEventListener('click', event => {
+        if (commentMarkerFromEvent(event) !== undefined) {
+          event.preventDefault()
+          event.stopPropagation()
+        }
+      }, true)
 
       const cacheKey = this.cacheKey
       view.requestMeasure({
@@ -378,6 +412,7 @@ function updateRow (
         onCitation, zknLinkFormat,
       }, 0).trim()
       contentWrapper.innerHTML = html.length > 0 ? sanitizeHTML(html) : '&nbsp;'
+      renderCommentMarkerLinks(contentWrapper)
 
       // NOTE: This handle gets attached once and then remains on the TD for
       // the existence of the table. Since the `view` will always be the same,
@@ -386,6 +421,10 @@ function updateRow (
       td.addEventListener('mousedown', (event) => {
         if (contentWrapper.classList.contains('editing')) {
           // There is already a subview inside this cell to handle selections.
+          return
+        }
+
+        if (selectCommentMarker(event, view)) {
           return
         }
 
@@ -454,6 +493,7 @@ function updateRow (
         onCitation, zknLinkFormat,
       }, 0).trim()
       contentWrapper.innerHTML = html.length > 0 ? sanitizeHTML(html) : '&nbsp;'
+      renderCommentMarkerLinks(contentWrapper)
       interceptAnchorClicks(contentWrapper, href => openMarkdownLink(href, view))
     } else if (subview === null && selectionInCell) {
       // Before we mount a subview, we need to normalize the selection if
@@ -499,6 +539,7 @@ function updateRow (
       }, 0).trim()
       if (html !== contentWrapper.innerHTML) {
         contentWrapper.innerHTML = html.length > 0 ? sanitizeHTML(html) : '&nbsp;'
+        renderCommentMarkerLinks(contentWrapper)
         interceptAnchorClicks(contentWrapper, href => openMarkdownLink(href, view))
       }
     } else if ((subviewFrom !== cell.from || subviewTo !== cell.to) && (columnsChanged || rowsChanged)) {

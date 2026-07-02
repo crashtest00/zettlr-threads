@@ -11,9 +11,23 @@ export interface CommentThread {
   id: string
   status: CommentThreadStatus
   messages: CommentMessage[]
+  markers: CommentMarker[]
   from: number
   to: number
   line: number
 }
 
-export type SerializableCommentThread = Omit<CommentThread, 'from'|'to'|'line'>
+export interface CommentMarker {
+  from: number
+  to: number
+  status: CommentThreadStatus
+}
+
+export interface CommentThreadDraft {
+  id: string
+  body: string
+  position: number
+  documentPath: string
+}
+
+export type SerializableCommentThread = Omit<CommentThread, 'markers'|'from'|'to'|'line'>

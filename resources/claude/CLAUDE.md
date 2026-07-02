@@ -26,7 +26,11 @@ Instructions:
 ```text
 Use this skill when reviewing, responding to, continuing, creating, or resolving Zettlr Threads Markdown comment threads.
 
-Zettlr Threads stores comment threads directly inside .md files as HTML comment blocks. These blocks are structured collaboration records, not ordinary prose.
+Zettlr Threads stores each comment as a visible Markdown marker associated by ID with an HTML comment block at the end of the .md file. These markers and blocks are structured collaboration records, not ordinary prose.
+
+Open marker:
+
+[💬](#zettlr-comment-c20260618143500)
 
 Canonical thread format:
 
@@ -42,6 +46,8 @@ How about: "Every great decision starts with a single clear question."
 -->
 
 Valid thread rules:
+- Each valid thread has a marker whose #zettlr-comment-<id> fragment matches the block's @thread <id>.
+- Open markers use 💬; resolved markers use ✓.
 - The opening marker must be exactly <!-- on its own line.
 - The closing marker must be exactly --> on its own line.
 - @thread is required.
@@ -67,14 +73,16 @@ When replying to a thread, append only the new Claude message:
 Your reply here.
 
 When the user asks you to leave a new inline comment:
-1. Insert the thread near the relevant prose, usually after the paragraph or section being discussed.
+1. Insert an open marker at the relevant prose without changing that prose.
 2. Generate a unique thread ID beginning with c, such as c20260618143722.
-3. Set @status open.
-4. If you are recording the user's stated concern, use [user | timestamp].
-5. If you are leaving your own review note or suggestion, use [claude | timestamp].
+3. Append the matching thread block at the end of the document with at least one blank line of separation.
+4. Set @status open.
+5. If you are recording the user's stated concern, use [user | timestamp].
+6. If you are leaving your own review note or suggestion, use [claude | timestamp].
 
 When the user asks you to resolve a thread:
 - Change @status open to @status resolved.
+- Replace the matching open marker's 💬 label with ✓.
 - Preserve all messages.
 - Optionally append a short [claude | timestamp] note first if the resolution needs context.
 - Do not delete resolved threads unless the user explicitly asks you to remove them.
@@ -114,7 +122,22 @@ Editing safety:
 
 This repository uses local Markdown comment threads as the bridge between the user, Zettlr Threads, and Claude Cowork. Treat these comment blocks as structured collaboration records, not ordinary prose.
 
-Comment threads are stored directly inside `.md` files as HTML comment blocks. Standard Markdown renderers hide them, but they remain editable in any text editor.
+Comment locations are stored as visible Markdown markers and their conversations
+as matching HTML comment blocks at the end of `.md` files. Standard Markdown
+renderers show the marker and hide the conversation block, while both remain
+editable in any text editor.
+
+Open marker:
+
+```md
+[💬](#zettlr-comment-c20260618143500)
+```
+
+Resolved marker:
+
+```md
+[✓](#zettlr-comment-c20260618143500)
+```
 
 Canonical format:
 
@@ -133,6 +156,9 @@ How about: "Every great decision starts with a single clear question."
 
 ## Valid Thread Rules
 
+- The marker fragment must be `#zettlr-comment-<id>` and match the block's
+  `@thread <id>`.
+- Open markers use `💬`; resolved markers use `✓`.
 - The opening marker must be exactly `<!--` on its own line.
 - The closing marker must be exactly `-->` on its own line.
 - `@thread` is required.
@@ -166,15 +192,19 @@ Your reply here.
 
 When the user asks you to leave a new inline comment:
 
-1. Insert the thread near the relevant prose, usually after the paragraph or section being discussed.
+1. Insert an open marker at the relevant prose without changing that prose.
 2. Generate a unique thread ID beginning with `c`, such as `c20260618143722`.
-3. Set `@status open`.
-4. If you are recording the user's stated concern, use `[user | timestamp]`.
-5. If you are leaving your own review note or suggestion, use `[claude | timestamp]`.
+3. Append the matching HTML thread block at the document end with at least one
+   blank line of separation.
+4. Set `@status open`.
+5. If you are recording the user's stated concern, use `[user | timestamp]`.
+6. If you are leaving your own review note or suggestion, use `[claude | timestamp]`.
 
 Example:
 
 ```md
+[💬](#zettlr-comment-c20260618143722)
+
 <!--
 @thread c20260618143722
 @status open
@@ -189,6 +219,7 @@ This paragraph makes the right point, but the causal link could be clearer. Cons
 When the user asks you to resolve a thread:
 
 - Change `@status open` to `@status resolved`.
+- Replace the matching open marker's `💬` label with `✓`.
 - Preserve all messages.
 - Optionally append a short `[claude | timestamp]` note first if the resolution needs context.
 

@@ -51,7 +51,7 @@ import type { DocumentManagerIPCAPI, DocumentsUpdateContext } from 'source/app/s
 import type { CiteprocProviderIPCAPI } from 'source/app/service-providers/citeproc'
 import type { ProjectInfo } from 'source/common/modules/markdown-editor/plugins/project-info-field'
 import type { FileContentSearchResult } from 'source/app/service-providers/search'
-import type { CommentThread } from 'source/common/modules/markdown-editor/comments/types'
+import type { CommentThread, CommentThreadDraft } from 'source/common/modules/markdown-editor/comments/types'
 
 const ipcRenderer = window.ipc
 
@@ -168,6 +168,13 @@ ipcRenderer.on('documents-update', (e, payload: { event: DP_EVENTS, context: Doc
 })
 
 ipcRenderer.on('reload-editors', _e => {
+  if (
+    currentEditor !== null &&
+    windowStateStore.commentThreadDraft?.documentPath === currentEditor.documentPath
+  ) {
+    currentEditor.cancelCommentThreadDraft(windowStateStore.commentThreadDraft.id)
+    windowStateStore.commentThreadDraft = undefined
+  }
   currentEditor?.reload().catch(err => console.error('Failed to reload editor after `reload-editors` event', err))
 })
 
@@ -183,6 +190,10 @@ onMounted(() => {
 
 onBeforeUnmount(() => {
   if (currentEditor !== null) {
+    if (windowStateStore.commentThreadDraft?.documentPath === currentEditor.documentPath) {
+      currentEditor.cancelCommentThreadDraft(windowStateStore.commentThreadDraft.id)
+      windowStateStore.commentThreadDraft = undefined
+    }
     props.persistentStateMap.set(props.file.path, currentEditor.persistentState)
     // Clear out the table of contents before unmounting the component.
     windowStateStore.tableOfContents = undefined
@@ -203,6 +214,10 @@ onUpdated(() => {
 
   const currentFilePath = currentEditor.documentPath
   if (currentFilePath !== props.activeFile?.path) {
+    if (windowStateStore.commentThreadDraft?.documentPath === currentFilePath) {
+      currentEditor.cancelCommentThreadDraft(windowStateStore.commentThreadDraft.id)
+      windowStateStore.commentThreadDraft = undefined
+    }
     // File path has changed -> unmount and remount (duplicate code from
     // onMounted and onBeforeUnmount hooks).
     props.persistentStateMap.set(currentFilePath, currentEditor.persistentState)
@@ -234,7 +249,7 @@ const editorConfiguration = computed<EditorConfigOptions>(() => {
   // right after setting the new configurations. Plus, the user won't update
   // everything all the time, but rather do one initial configuration, so
   // even if we incur a performance penalty, it won't be noticed that much.
-  const { editor, display, zkn, darkMode } = configStore.config
+  const { editor, display, zkn, darkMode, darkModeEditor } = configStore.config
   return {
     indentUnit: editor.indentUnit,
     indentWithTabs: editor.indentWithTabs,
@@ -285,6 +300,7 @@ const editorConfiguration = computed<EditorConfigOptions>(() => {
     showStatusbar: editor.showStatusbar,
     showFormattingToolbar: editor.showFormattingToolbar,
     darkMode,
+    darkModeEditor,
     theme: display.theme,
     highlightWhitespace: editor.showWhitespace,
     showMarkdownLineNumbers: editor.showMarkdownLineNumbers,
@@ -386,8 +402,17 @@ watch(toRef(props.editorCommands, 'executeCommand'), () => {
   }
 
   const command: string = props.editorCommands.data
+  if (
+    command === 'insertCommentThread' &&
+    windowStateStore.commentThreadDraft?.documentPath === currentEditor.documentPath
+  ) {
+    currentEditor.cancelCommentThreadDraft(windowStateStore.commentThreadDraft.id)
+    windowStateStore.commentThreadDraft = undefined
+  }
   currentEditor.runCommand(command)
-  currentEditor.focus()
+  if (command !== 'insertCommentThread') {
+    currentEditor.focus()
+  }
 })
 
 watch(toRef(props.editorCommands, 'appendCommentReply'), () => {
@@ -425,6 +450,38 @@ watch(toRef(props.editorCommands, 'editCommentMessage'), () => {
   ) {
     currentEditor.editCommentMessage(selectedThread, payload.index, payload.body)
     currentEditor.focus()
+  }
+})
+
+watch(toRef(props.editorCommands, 'createCommentThread'), () => {
+  if (props.activeFile?.path !== props.file.path || currentEditor === null) {
+    return
+  }
+
+  const draft = windowStateStore.commentThreadDraft
+  const body: string = props.editorCommands.data
+  if (
+    documentTreeStore.lastLeafId === props.leafId &&
+    draft !== undefined &&
+    draft.documentPath === currentEditor.documentPath &&
+    typeof body === 'string'
+  ) {
+    currentEditor.insertCommentThread(body, draft)
+    windowStateStore.commentThreadDraft = undefined
+  }
+})
+
+watch(toRef(props.editorCommands, 'cancelCommentDraft'), () => {
+  const draft = windowStateStore.commentThreadDraft
+  if (
+    props.activeFile?.path === props.file.path &&
+    documentTreeStore.lastLeafId === props.leafId &&
+    currentEditor !== null &&
+    draft !== undefined &&
+    draft.documentPath === currentEditor.documentPath
+  ) {
+    currentEditor.cancelCommentThreadDraft(draft.id)
+    windowStateStore.commentThreadDraft = undefined
   }
 })
 
@@ -555,8 +612,28 @@ async function getEditorFor (doc: string): Promise<MarkdownEditor> {
 
   editor.on('comment-thread-selected', (thread: CommentThread) => {
     if (currentEditor === editor) {
+      if (windowStateStore.commentThreadDraft?.documentPath === editor.documentPath) {
+        editor.cancelCommentThreadDraft(windowStateStore.commentThreadDraft.id)
+      }
+      windowStateStore.commentThreadDraft = undefined
       windowStateStore.commentThreads = currentEditor.commentThreads
       windowStateStore.selectedCommentThread = thread
+      configStore.setConfigValue('window.sidebarVisible', true)
+      configStore.setConfigValue('window.currentSidebarTab', 'comments')
+    }
+  })
+
+  editor.on('comment-thread-draft-created', (draft: CommentThreadDraft) => {
+    if (currentEditor === editor) {
+      const previousDraft = windowStateStore.commentThreadDraft
+      if (
+        previousDraft !== undefined &&
+        previousDraft.documentPath === editor.documentPath
+      ) {
+        editor.cancelCommentThreadDraft(previousDraft.id)
+      }
+      windowStateStore.selectedCommentThread = undefined
+      windowStateStore.commentThreadDraft = draft
       configStore.setConfigValue('window.sidebarVisible', true)
       configStore.setConfigValue('window.currentSidebarTab', 'comments')
     }

@@ -58,10 +58,10 @@ import { statusbar } from './statusbar'
 import { renderers } from './renderers'
 import { mdPasteDropHandlers } from './plugins/md-paste-drop-handlers'
 import { footnoteGutter } from './plugins/footnote-gutter'
-import { commentGutter } from './plugins/comment-gutter'
+import { hiddenCommentThreads } from './plugins/hide-comment-threads'
 import { yamlFrontmatterLint } from './linters/yaml-frontmatter-lint'
 import {
-  mainThemes, darkMode,
+  mainThemes, darkMode, useDarkModeEditor,
   themeBerlinLight, themeBerlinDark,
   themeBielefeldLight, themeBielefeldDark,
   themeBordeauxLight, themeBordeauxDark,
@@ -172,7 +172,7 @@ function getCoreExtensions (options: CoreExtensionOptions): Extension[] {
     inputModeCompartment.of(inputMode),
     // Then, include the default keymap
     defaultKeymap(),
-    darkMode({ darkMode: options.initialConfig.darkMode, ...themes[options.initialConfig.theme] }),
+    darkMode({ darkMode: useDarkModeEditor(options.initialConfig.darkMode, options.initialConfig.darkModeEditor), ...themes[options.initialConfig.theme] }),
     // CODE FOLDING
     codeFolding(),
     Prec.low(foldGutter()), // The fold gutter should appear next to the text content
@@ -332,7 +332,7 @@ export function getMarkdownExtensions (options: CoreExtensionOptions): Extension
     formattingToolbar,
     footnoteHover,
     footnoteGutter, // Should be after markdownFolding
-    commentGutter,
+    hiddenCommentThreads,
     urlHover,
     filePreview,
     citationTooltips,

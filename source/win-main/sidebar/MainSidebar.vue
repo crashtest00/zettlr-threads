@@ -20,6 +20,8 @@
         v-show="currentTab === 'comments'"
         v-on:append-reply="emit('append-comment-reply', $event)"
         v-on:edit-message="emit('edit-comment-message', $event)"
+        v-on:create-thread="emit('create-comment-thread', $event)"
+        v-on:cancel-draft="emit('cancel-comment-draft')"
         v-on:resolve="emit('resolve-comment-thread')"
         v-on:delete-thread="emit('delete-comment-thread')"
       ></CommentsTab>
@@ -59,6 +61,8 @@ const emit = defineEmits<{
   (e: 'jump-to-line', line: number): void
   (e: 'append-comment-reply', body: string): void
   (e: 'edit-comment-message', payload: { index: number, body: string }): void
+  (e: 'create-comment-thread', body: string): void
+  (e: 'cancel-comment-draft'): void
   (e: 'resolve-comment-thread'): void
   (e: 'delete-comment-thread'): void
 }>()

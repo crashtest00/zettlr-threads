@@ -31,6 +31,7 @@ import { Decoration, type DecorationSet, EditorView } from '@codemirror/view'
 import {
   type EditorSelection,
   EditorState,
+  Transaction,
   Text,
   type StateEffect,
   type Extension,
@@ -94,16 +95,26 @@ import {
 } from './plugins/remote-doc'
 import { markdownToAST } from '../markdown-utils'
 import { countField, updateWordCountEffect } from './plugins/statistics-fields'
-import { darkModeEffect } from './theme/dark-mode'
+import { useDarkModeEditor, darkModeEffect } from './theme/dark-mode'
 import { editorMetadataFacet } from './plugins/editor-metadata'
 import { projectInfoUpdateEffect, type ProjectInfo } from './plugins/project-info-field'
 import { moveSection } from './commands/move-section'
 import { parsePandocAttributes } from 'source/common/pandoc-util/parse-pandoc-attributes'
 import { closeSearchPanel, openSearchPanel, searchPanelOpen } from '@codemirror/search'
 import { clickListeners } from './plugins/click-listeners'
-import type { CommentThread } from './comments/types'
+import type { CommentThread, CommentThreadDraft } from './comments/types'
 import { parseCommentThreads, serializeCommentThread } from './comments/parser'
 import { appendUserReply, createCommentThread, editCommentMessage, resolveThread } from './comments/commands'
+import {
+  commentThreadCreationChanges,
+  commentThreadDeletionChanges,
+  commentThreadResolutionChanges,
+  effectiveCommentCreationPosition,
+  formatCommentMarker,
+  provisionalCommentMarkerChange,
+  provisionalCommentMarkerRemoval,
+  quoteCommentSelection
+} from './comments/markers'
 
 export interface DocumentWrapper {
   path: string
@@ -552,6 +563,7 @@ export default class MarkdownEditor extends EventEmitter {
   private onConfigUpdate (newOptions: Partial<EditorConfiguration>): void {
     const inputModeChanged = newOptions.inputMode !== undefined && newOptions.inputMode !== this.config.inputMode
     const darkModeChanged = newOptions.darkMode !== undefined && newOptions.darkMode !== this.config.darkMode
+    const editorModeChanged = newOptions.darkModeEditor !== undefined && newOptions.darkModeEditor !== this.config.darkModeEditor
     const themeChanged = newOptions.theme !== undefined && newOptions.theme !== this.config.theme
 
     // Third: The input mode, if applicable
@@ -566,12 +578,15 @@ export default class MarkdownEditor extends EventEmitter {
     }
 
     // Fourth: Switch theme, if applicable
-    if (darkModeChanged || themeChanged) {
+    if (darkModeChanged || editorModeChanged || themeChanged) {
       const themes = getMainEditorThemes()
+
+      const darkMode = newOptions.darkMode ?? this.config.darkMode
+      const darkModeEditor = newOptions.darkModeEditor ?? this.config.darkModeEditor
 
       this._instance.dispatch({
         effects: darkModeEffect.of({
-          darkMode: newOptions.darkMode,
+          darkMode: useDarkModeEditor(darkMode, darkModeEditor),
           ...themes[newOptions.theme ?? this.config.theme]
         })
       })
@@ -585,7 +600,7 @@ export default class MarkdownEditor extends EventEmitter {
    *
    * @return  {any}           The value of the key
    */
-  getOption (name: string): any {
+  getOption (name: string) {
     const config = this._instance.state.field(configField)
     if (name in config) {
       return config[name as keyof EditorConfiguration]
@@ -600,7 +615,7 @@ export default class MarkdownEditor extends EventEmitter {
   runCommand (cmd: string): void {
     switch (cmd) {
       case 'insertCommentThread':
-        this.insertCommentThread('')
+        this.openCommentThreadDraft()
         break
       case 'markdownComment':
         applyComment(this._instance)
@@ -648,26 +663,89 @@ export default class MarkdownEditor extends EventEmitter {
     return matches.length === 1 ? matches[0] : undefined
   }
 
-  insertCommentThread (initialBody: string): void {
-    const thread = createCommentThread(initialBody)
-    const block = serializeCommentThread(thread)
-    const selection = this._instance.state.selection.main
-    const doc = this._instance.state.doc
-    const targetLine = doc.lineAt(selection.empty ? selection.from : selection.to)
-    const insertAt = targetLine.to
-    const insert = insertAt === 0 ? block : `\n${block}`
+  openCommentThreadDraft (): void {
+    const activeElement = document.activeElement
+    const focusedView = activeElement instanceof HTMLElement
+      ? EditorView.findFromDOM(activeElement)
+      : null
+    const creationState = focusedView !== null && this._instance.dom.contains(focusedView.dom)
+      ? focusedView.state
+      : this._instance.state
+    const selection = creationState.selection.main
+    const selectedText = selection.empty
+      ? ''
+      : creationState.sliceDoc(selection.from, selection.to)
+    const quote = quoteCommentSelection(selectedText)
+    const thread = createCommentThread()
+    const marker = formatCommentMarker(thread.id)
+    const markerChange = provisionalCommentMarkerChange(
+      creationState,
+      effectiveCommentCreationPosition(selection, selectedText),
+      marker
+    )
+    const scrollSnapshot = this._instance.scrollSnapshot()
+    this._instance.dispatch({
+      changes: markerChange,
+      effects: scrollSnapshot,
+      annotations: Transaction.addToHistory.of(false)
+    })
+    const draft: CommentThreadDraft = {
+      id: thread.id,
+      body: quote.length > 0 ? `${quote}\n\n` : '',
+      position: markerChange.from,
+      documentPath: this.documentPath
+    }
+
+    this.emit('comment-thread-draft-created', draft)
+  }
+
+  cancelCommentThreadDraft (id: string): void {
+    const removal = provisionalCommentMarkerRemoval(this._instance.state, id)
+    if (removal === undefined) {
+      return
+    }
 
     this._instance.dispatch({
-      changes: { from: insertAt, to: insertAt, insert },
-      selection: { anchor: insertAt + (insertAt === 0 ? 0 : 1) },
-      scrollIntoView: true
+      changes: removal,
+      effects: this._instance.scrollSnapshot(),
+      annotations: Transaction.addToHistory.of(false)
+    })
+  }
+
+  insertCommentThread (initialBody: string, draft: CommentThreadDraft): void {
+    if (initialBody.trim().length === 0) {
+      return
+    }
+
+    const removal = provisionalCommentMarkerRemoval(this._instance.state, draft.id)
+    if (removal === undefined) {
+      return
+    }
+
+    const scrollSnapshot = this._instance.scrollSnapshot()
+    this._instance.dispatch({
+      changes: removal,
+      effects: scrollSnapshot,
+      annotations: Transaction.addToHistory.of(false)
+    })
+
+    const thread = {
+      ...createCommentThread(initialBody),
+      id: draft.id
+    }
+    const block = serializeCommentThread(thread)
+    const state = this._instance.state
+    const marker = formatCommentMarker(thread.id)
+
+    this._instance.dispatch({
+      changes: commentThreadCreationChanges(state, removal.from, marker, block),
+      effects: scrollSnapshot
     })
 
     const inserted = this.commentThreads.find(candidate => candidate.id === thread.id)
     if (inserted !== undefined) {
       this.emit('comment-thread-selected', inserted)
     }
-    this._instance.focus()
   }
 
   appendCommentReply (thread: CommentThread, body: string): void {
@@ -711,11 +789,15 @@ export default class MarkdownEditor extends EventEmitter {
     }
 
     const replacement = serializeCommentThread(resolveThread(target))
+    const changes = commentThreadResolutionChanges(target, replacement)
+    if (changes === undefined) {
+      return
+    }
     this._instance.dispatch({
-      changes: { from: target.from, to: target.to, insert: replacement }
+      changes
     })
 
-    const updated = this.commentThreads.find(candidate => candidate.id === target.id && candidate.from === target.from)
+    const updated = this.commentThreads.find(candidate => candidate.id === target.id)
     if (updated !== undefined) {
       this.emit('comment-thread-selected', updated)
     }
@@ -727,13 +809,13 @@ export default class MarkdownEditor extends EventEmitter {
       return
     }
 
-    const doc = this._instance.state.doc
-    const to = target.to < doc.length && doc.sliceString(target.to, target.to + 1) === '\n'
-      ? target.to + 1
-      : target.to
+    const changes = commentThreadDeletionChanges(this._instance.state, target)
+    if (changes === undefined) {
+      return
+    }
 
     this._instance.dispatch({
-      changes: { from: target.from, to, insert: '' }
+      changes
     })
   }
 

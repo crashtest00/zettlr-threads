@@ -1,6 +1,6 @@
 <h1 align="center">
   <a href="https://github.com/Zettlr/Zettlr">
-    <img src="https://raw.githubusercontent.com/Zettlr/Zettlr/master/resources/icons/png/256x256.png" alt="Zettlr Threads"/>
+    <img src="https://raw.githubusercontent.com/Zettlr/Zettlr/master/resources/icons/png/1024x1024.png" alt="Zettlr Threads" width="256" height="256" />
   </a>
   <br/>
   Zettlr Threads
@@ -445,6 +445,11 @@ certain behaviors into the final binary. These usually come as environment
 variables. If they are present, Zettlr will produce a different binary.
 
 #### `ZETTLR_DISABLE_UPDATE_CHECK`
+
+Zettlr Threads sets this flag in its development, packaging, and release
+commands. Automatic update checks are unavailable in official Zettlr Threads
+builds; download new versions manually from the
+[Zettlr Threads GitHub Releases page](https://github.com/crashtest00/Zettlr-Threads/releases).
 
 If this environment variable is present during build, this will cause the
 resulting binary to have its built-in update-checking mechanism disabled. This
