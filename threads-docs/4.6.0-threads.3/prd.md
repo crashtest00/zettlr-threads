@@ -2,9 +2,9 @@
 
 ## Release
 
-Target patch: `4.6.0-threads.2.1`
+Target release: `4.6.0-threads.3`
 
-This patch preserves the `4.6.0-threads.2` protocol and corrects promotion of
+This release preserves the `4.6.0-threads.2` protocol and patches promotion of
 provisional draft markers.
 
 ## Requirement

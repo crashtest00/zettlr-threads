@@ -2,7 +2,7 @@
 
 ## Release
 
-Target patch: `4.6.0-threads.2.1`
+Target release: `4.6.0-threads.3`
 
 ## Builder Agent Preamble
 
@@ -47,6 +47,6 @@ instance, recorded user testing, and explicit user approval.
 - Focused lint completed with no errors; only pre-existing warnings were
   reported.
 - User test result:
-  `threads-docs/tests/4.6.0-threads.2.1/phase-1/4.6.0-threads.2.1.test.1.md`
+  `threads-docs/tests/4.6.0-threads.3/phase-1/4.6.0-threads.3.test.1.md`
   (local ignored artifact).
 - The user approved the running workflow on 2026-07-01.

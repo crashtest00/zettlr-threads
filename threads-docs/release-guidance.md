@@ -71,6 +71,10 @@ Do not alter upstream-origin behavior as an incidental troubleshooting fix.
 
 ## Create a GitHub Release Candidate
 
+Use **release** for a numbered product version such as
+`4.6.0-threads.3`. Use **build** for a particular CI run or compiled artifact;
+multiple builds may validate or produce the same release.
+
 For Zettlr Threads, "build the release" means running
 `.github/workflows/build.yml` for the intended release branch and commit. It
 does not mean reconstructing the GitHub Actions environment in WSL or producing
@@ -124,4 +128,3 @@ an ad hoc collection of local artifacts.
 - Before release handoff, confirm the worktree state, local/fork alignment, and
   known CI result.
 - The user must perform interactive authentication when required.
-

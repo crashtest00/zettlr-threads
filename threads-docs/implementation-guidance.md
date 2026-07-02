@@ -1,6 +1,6 @@
 # Zettlr Threads Implementation Guidance
 
-These rules apply to every Threads prototype. They supplement the target
+These rules apply to every Threads release. They supplement the target
 release's PRD, plan, plan review, and phase implementation specs.
 
 ## Builder Execution Contract
@@ -53,9 +53,12 @@ branding requirement, or distribution constraint.
 - Keep changes within established ownership boundaries. Avoid parallel
   abstractions, unrelated refactors, formatting sweeps, dependency upgrades,
   broad renames, and changes to unrelated upstream behavior.
-- Keep the upstream numeric version unchanged. Advance only the `threads.N`
-  suffix for another prototype on the same upstream release.
-- Preserve upstream compatibility using both the prototype's upstream base and
+- Keep the upstream numeric version unchanged. Advance only the flat
+  `threads.N` suffix for each release on the same upstream version, regardless
+  of whether the release contains patches or features. Never append another
+  numeric component after `threads.N`; Windows versions support at most four
+  numeric components.
+- Preserve upstream compatibility using both the release's upstream base and
   current `upstream/develop`. Use the recorded base commit or merge base to
   identify Threads-owned changes. When network access and task authority allow,
   compare against live `upstream/develop` to detect upstream fixes,
@@ -84,7 +87,7 @@ branding requirement, or distribution constraint.
   unrelated work in the working tree.
 - Extend an existing abstraction before introducing a new one. Add a dependency
   only when the existing stack cannot reasonably provide the behavior.
-- Preserve public and internal APIs unless the prototype explicitly changes
+- Preserve public and internal APIs unless the release explicitly changes
   their contract.
 - Include the state updates, tests, documentation, accessibility behavior, and
   cleanup required for the feature to work safely. Minimal does not mean
@@ -176,8 +179,8 @@ variants for checks.
 
 ## Documentation Discipline
 
-- Keep historical prototype documents intact except for link repairs,
+- Keep historical release documents intact except for link repairs,
   clarification banners, or naming normalization.
-- Put new requirements in the target prototype directory, following this
+- Put new requirements in the target release directory, following this
   sequence: PRD, plan, plan review, then any needed phase implementation specs.
 - Record deferred behavior explicitly instead of partially implementing it.
