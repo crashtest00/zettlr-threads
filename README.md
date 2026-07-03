@@ -11,6 +11,8 @@
   Zettlr Threads
 </h1>
 
+## Video
+
 https://github.com/user-attachments/assets/3c9974c7-831f-4361-bf16-eb4dc47ce103
 
 <p align="center"><strong>An unofficial Zettlr fork for threaded comments and interactive review.</strong></p>
